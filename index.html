@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Regional-Stat System</title>
+<meta name="description" content="A tabletop system with no hit points. Six stats double as body regions; every landed blow wounds, and every wound changes what you can do.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#17120f; --ink2:#1e1813; --panel:#241c16; --panel2:#2c231b;
+  --bone:#e8dfce; --bone-dim:#a4977e; --bone-faint:#6f6451;
+  --oxblood:#7b2d26; --wound:#a8352b; --gild:#c1923f; --gild-dim:#8a6a2e;
+  --line:#3a2f25;
+  --struct:#c98a4b; --faculty:#7fa8c4;
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 600px at 50% -10%, #2a201a 0%, var(--ink) 60%) fixed;
+  color:var(--bone);font-family:'Spectral',Georgia,serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 22px 90px}
+
+header.mast{padding:52px 0 22px;border-bottom:1px solid var(--line);margin-bottom:30px}
+.kicker{font-family:'Spline Sans Mono',monospace;font-size:.72rem;letter-spacing:.34em;text-transform:uppercase;color:var(--gild);margin:0 0 12px}
+h1.title{font-family:'IM Fell English SC',serif;font-weight:400;font-size:clamp(2.4rem,6vw,4rem);line-height:.98;margin:0;color:var(--bone)}
+.lede{font-family:'IM Fell English',serif;font-style:italic;color:var(--bone-dim);font-size:1.12rem;margin:.8rem 0 0;max-width:64ch}
+
+h2{font-family:'IM Fell English SC',serif;font-weight:400;font-size:1.5rem;margin:0 0 6px;color:var(--bone)}
+h4{font-family:'Spline Sans Mono',monospace;font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--bone-faint);margin:34px 0 14px;font-weight:500}
+
+/* the shelf of tools */
+.shelf{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px}
+.tool{display:block;text-decoration:none;color:inherit;position:relative;
+  background:linear-gradient(180deg,var(--panel) 0%,var(--ink2) 100%);border:1px solid var(--line);
+  border-radius:3px;padding:20px 22px;box-shadow:0 18px 40px -30px #000;transition:.16s}
+.tool:hover{border-color:var(--gild-dim);transform:translateY(-2px)}
+.tool .tag{font-family:'Spline Sans Mono',monospace;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--bone-faint);display:block;margin-bottom:9px}
+.tool p{margin:.5rem 0 0;color:var(--bone-dim);font-size:.97rem}
+.tool .go{font-family:'Spline Sans Mono',monospace;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--gild);margin-top:14px;display:inline-block}
+.tool:hover .go{color:var(--bone)}
+
+/* the codex gets the big slot */
+.tool.primary{grid-column:1 / -1;border-color:#4a3227;
+  background:linear-gradient(180deg,#2e211b 0%,var(--ink2) 100%);padding:26px 24px}
+.tool.primary .tag{color:var(--gild)}
+.tool.primary h2{font-size:2rem}
+.tool.primary p{font-size:1.03rem;max-width:66ch}
+
+/* the primer */
+.primer{background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--oxblood);
+  border-radius:3px;padding:20px 24px;margin-top:8px}
+.primer p{margin:0 0 .8rem;color:var(--bone-dim);max-width:74ch}
+.primer p:last-child{margin-bottom:0}
+.primer b{color:var(--bone);font-weight:600}
+.s{color:var(--struct)} .f{color:var(--faculty)}
+
+footer{margin-top:46px;padding-top:18px;border-top:1px solid var(--line);
+  font-family:'Spline Sans Mono',monospace;font-size:.66rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--bone-faint)}
+footer a{color:var(--bone-faint)}
+
+@media(max-width:760px){
+  .shelf{grid-template-columns:1fr}
+  header.mast{padding-top:34px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="mast">
+  <p class="kicker">Tabletop system · living reference</p>
+  <h1 class="title">The Regional-Stat System</h1>
+  <p class="lede">A game with no hit points. Six stats double as the durability of a body region, so every landed blow lands <em>somewhere</em> — and what it costs you is measured in what you can still do.</p>
+</header>
+
+<h4>The tools</h4>
+
+<div class="shelf">
+
+  <a class="tool primary" href="Codex.html">
+    <span class="tag">Start here · character sheet, rules primer &amp; compendium</span>
+    <h2>The Codex</h2>
+    <p>Build and track a character region by region, read the rules in plain English, equip weapons and armour from the tables, and throw practice blows at a dummy to watch a wound change the next swing. Also carries every rune, spell, vow and ability in the system.</p>
+    <span class="go">Open the Codex →</span>
+  </a>
+
+  <a class="tool" href="System_State_of_Play.html">
+    <span class="tag">Design essay</span>
+    <h2>No hit points, only flesh</h2>
+    <p>Why the system exists, what it is trying to fix about hit points, and an honest audit of what is still unresolved.</p>
+    <span class="go">Read →</span>
+  </a>
+
+  <a class="tool" href="Alchemy/Alchemy_Workbench.html">
+    <span class="tag">Reference tool</span>
+    <h2>Alchemist's Workbench</h2>
+    <p>435 herbs and the effects they carry. Search by effect to find what to brew, or by herb to find what it does.</p>
+    <span class="go">Open →</span>
+  </a>
+
+  <a class="tool" href="Weapons/Current/Wound_Atlas.html">
+    <span class="tag">Reference tool · partly superseded</span>
+    <h2>Field Surgeon's Wound Atlas</h2>
+    <p>The wound ladders by damage type and region, laid out to browse. Predates the current severity rules — the Codex is the live tool.</p>
+    <span class="go">Open →</span>
+  </a>
+
+</div>
+
+<h4>If you have never seen this before</h4>
+
+<div class="primer">
+  <p>Most games give you a pool of hit points. You subtract from it, and nothing changes until it hits zero — a fighter on their last point swings exactly as well as one at full health. This system refuses that.</p>
+  <p>Here, your six stats <b>are</b> your body. Three of them are <b class="s">Structure</b> — Constitution is your head and chest, Brawn is your arms, Drive is your legs — and each one is both how hard that region is to break and how much punishment it has left. The other stats are <b class="f">Faculty</b>: how hard you are to hit in the first place.</p>
+  <p>So a blow to the leg is rolled against the leg, graded against how sturdy that leg still is, and paid for out of that same leg. Cut deep enough and you do not lose a number — you lose your footing, your reach, your grip on the sword. <b>Only the head and chest running out kills you.</b> Everything else just makes you worse at fighting, which is usually enough.</p>
+  <p>The Codex's <b>How it works</b> tab explains all of it from scratch, with no jargon and no shorthand.</p>
+</div>
+
+<footer>
+  Built from the design sources in this repository · <a href="https://github.com/Jonoleth/TTRPG">github.com/Jonoleth/TTRPG</a>
+</footer>
+
+</div>
+</body>
+</html>

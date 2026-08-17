@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Field Surgeon&#39;s Wound Atlas</title>
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#EFece4; --panel:#fff; --ink:#211c19; --muted:#6c625b; --line:#e2dcd2;
+  --bar:#2a2320; --accent:#7B2D26;
+}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;background:var(--bg);color:var(--ink);min-height:100vh}
+.app{display:grid;grid-template-columns:360px 1fr;grid-template-rows:auto 1fr;min-height:100vh}
+.topbar{grid-column:1/-1;background:var(--bar);color:#f4efe7;padding:12px 22px;display:flex;align-items:baseline;gap:16px;border-bottom:3px solid var(--accent)}
+.topbar h1{font-family:Georgia,"Times New Roman",serif;font-size:21px;font-weight:600;letter-spacing:.3px}
+.topbar .sub{font-size:12.5px;opacity:.65;margin-left:auto;font-style:italic}
+.sidebar{background:var(--panel);border-right:1px solid var(--line);padding:16px;overflow-y:auto;height:calc(100vh - 52px)}
+.main{padding:20px 24px;overflow-y:auto;height:calc(100vh - 52px)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+.panel-title{font-family:Georgia,serif;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+
+/* body diagram */
+.figure-wrap{display:flex;justify-content:center;padding:4px 0 10px}
+svg .zone path, svg .zone ellipse{fill:#d9cfc2;stroke:#b7a998;stroke-width:1.5;cursor:pointer;transition:fill .14s,stroke .14s}
+svg .zone:hover path, svg .zone:hover ellipse{fill:#c4b39e}
+svg .zone.active path, svg .zone.active ellipse{fill:var(--accent);stroke:#54211c}
+.zone-label{font-size:11px;fill:#5c534b;pointer-events:none;font-family:system-ui,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.fig-hint{text-align:center;font-size:12px;color:var(--muted);font-style:italic;margin-top:2px}
+
+/* damage selector */
+.dt-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.dt-btn{padding:9px 8px;border:1px solid var(--line);border-radius:7px;background:#faf8f4;cursor:pointer;font-size:13px;font-weight:600;color:#3a332e;text-align:left;display:flex;align-items:center;gap:8px;transition:all .12s}
+.dt-btn .dot{width:11px;height:11px;border-radius:50%;flex:none}
+.dt-btn:hover:not(.disabled){background:#fff;border-color:#bbab97;transform:translateY(-1px)}
+.dt-btn.active{color:#fff}
+.dt-btn.disabled{opacity:.4;cursor:not-allowed;font-weight:500}
+.dt-btn.disabled .tag{margin-left:auto;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;opacity:.8}
+.loc-meta{font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.5}
+.loc-meta b{color:var(--ink)}
+
+/* main content */
+.placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:70%;color:var(--muted);text-align:center;gap:14px}
+.placeholder .big{font-family:Georgia,serif;font-size:22px;color:#9a8d80}
+.result-head{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+.result-head .pill{color:#fff;font-weight:700;font-size:13px;padding:5px 14px;border-radius:20px;font-family:Georgia,serif;letter-spacing:.3px}
+.result-head h2{font-family:Georgia,serif;font-size:24px;font-weight:600}
+.affinity{font-size:13px;color:var(--muted);font-style:italic;margin-bottom:6px;line-height:1.5;max-width:900px}
+.acline{font-size:13px;color:var(--ink);margin-bottom:16px}
+.acline .chip{display:inline-block;background:#efe7da;border:1px solid #ddd0bd;border-radius:6px;padding:2px 9px;font-weight:700;margin-left:4px}
+
+table.wt{border-collapse:collapse;width:100%;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+table.wt th{color:#fff;text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;padding:10px 12px;font-weight:700}
+table.wt td{padding:11px 12px;font-size:13px;vertical-align:top;border-top:1px solid var(--line);line-height:1.45}
+table.wt td.roll{text-align:center;font-weight:700;font-family:Georgia,serif;font-size:15px;white-space:nowrap;width:54px}
+table.wt td.wound{font-family:Georgia,serif;font-weight:600;width:175px}
+td.hp{width:130px}td.attr{width:150px}td.dc{width:90px;text-align:center;font-weight:600}
+td.dash{color:#bbada0}
+tr.mortal td{background:#1a1614!important;color:#f0e9e0;border-top-color:#000}
+tr.mortal td.wound{color:#f3b0a8}
+tr.mortal td.dc{color:#a99}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:12px;color:var(--muted)}
+.legend b{color:var(--ink)}
+.foot{margin-top:18px;font-size:11.5px;color:#9a8d80;font-style:italic}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <h1>Field Surgeon&#39;s Wound Atlas</h1>
+    <span class="sub">click a location &middot; choose a damage type &middot; read the consequence</span>
+  </div>
+
+  <div class="sidebar">
+    <div class="panel">
+      <div class="panel-title">Body Location</div>
+      <div class="figure-wrap" id="figwrap"></div>
+      <div class="fig-hint" id="fighint">Select a body location</div>
+    </div>
+    <div class="panel" id="dtpanel" style="display:none">
+      <div class="panel-title">Damage Type</div>
+      <div class="dt-grid" id="dtgrid"></div>
+      <div class="loc-meta" id="locmeta"></div>
+    </div>
+  </div>
+
+  <div class="main" id="main">
+    <div class="placeholder">
+      <div class="big">An anatomy of harm.</div>
+      <div>Choose a body location from the figure, then a damage type,<br>to see every wound that can result from a strike there.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DB = {"wounds": {"Slashing": {"Head": {"desc": "Head/Neck base AC 14 (small, mobile target). Wounds skew toward sensory loss (eyes, ears), disfigurement (CHA), and rapid death (neck arteries, spine).", "rows": [["1-4", "Facial laceration", "1d4 / hour", "—", "Cosmetic scar likely.", "DC 8"], ["5-7", "Deep scalp wound", "2d4 / hour", "—", "Blood in eyes: disadvantage on sight-based Perception until cleaned.", "DC 10"], ["8-10", "Lacerated cheek / jaw", "2d4 / hour", "-1 CHA (persistent)", "Scar is permanent without skilled surgery.", "DC 12"], ["11-12", "Cut to eye", "—", "Roll d4: on 4, permanent -2 WIS", "Disadvantage on sight Perception until healed. On d4=4 also disadvantage on ranged attacks (one-eyed).", "DC 14"], ["13-14", "Severed / lacerated ear", "1d4 / hour", "-1 WIS (persistent)", "Lose ear or major part. Partial deafness on that side.", "DC 10"], ["15-16", "Throat slash (partial)", "2d6 / hour", "1 CON / hour", "Cannot speak above a whisper until healed. Raspy voice may persist as -1 CHA.", "DC 14"], ["17", "Multiple facial wounds", "3d4 / hour", "-2 CHA (persistent)", "Combines scalp + cheek + eye effects.", "DC 16"], ["18", "Severed carotid / jugular", "3d6 / minute", "2 CON / minute", "NO tourniquet possible. Sustained heavy pressure or death within ~5-8 min.", "DC 18"], ["19", "Catastrophic head/neck wound", "3d6 / minute", "2 CON/min; permanent -2 CHA", "As 18, plus roll d6: 1-2 lose an eye (-2 WIS); 3-4 lose an ear (-1 WIS); 5-6 both.", "DC 20"], ["20", "Decapitation / spinal severance", "—", "CON set to 0", "Dead. No saves.", "—"]]}, "Chest": {"desc": "Chest base AC 10 (largest, center-mass target). Wounds skew toward bleeding, lung injury, and cardiac death.", "rows": [["1-6", "Surface laceration", "1d4 / hour", "—", "Minor.", "DC 8"], ["7-10", "Deep gash across ribs", "1d6 / hour", "—", "Disadvantage on STR/CON checks until bandaged (pain on breath). Moderate infection risk.", "DC 12"], ["11-13", "Major chest laceration", "2d4 / hour", "-1 STR (persistent)", "Chest movement restricted. Infection risk.", "DC 14"], ["14-15", "Severed intercostal artery", "2d6 / minute", "1 CON / minute", "Requires sustained pressure. Death in ~10-15 min untreated.", "DC 16"], ["16-17", "Sliced through chest wall", "2d6 / minute", "1 CON / min", "Roll d4: on 3-4 also take Punctured Lung (-2 STR, -2 CON persistent, cannot run, heals 3+ weeks).", "DC 16"], ["18", "Severed major chest artery", "3d6 / minute", "2 CON / minute", "Unconscious within 2 rounds, death within 5.", "DC 20"], ["19", "Slashed through to heart", "—", "1 CON / round", "Dead within ~10-15 seconds without divine intervention.", "DC 22"], ["20", "Bisected horizontally / mortal cut", "—", "CON set to 0", "Dead. No saves.", "—"]]}, "Abdomen": {"desc": "Abdomen base AC 11. Wounds skew toward severe infection (gut contents) and organ damage.", "rows": [["1-6", "Surface laceration", "1d4 / hour", "—", "Minor.", "DC 8"], ["7-10", "Deep belly cut", "1d6 / hour", "—", "HIGH infection risk: DC 14 CON save every 12 hr untreated.", "DC 12"], ["11-13", "Slashed abdominal wall", "2d4 / hour", "-1 STR (persistent)", "Core muscles compromised. High infection risk.", "DC 14"], ["14-15", "Cut into intestines (Punctured Gut)", "1d4 / hour", "1 CON / day; -1 STR perm if untreated", "DC 16 CON save every 12 hr or progress to sepsis.", "DC 16"], ["16-17", "Severed abdominal artery", "2d6 / minute", "1 CON / minute", "Limited tourniquet options. High infection risk on top of bleed.", "DC 18"], ["18", "Eviscerated", "3d6 / minute", "2 CON/min; perm -2 STR, -1 CON", "Organs exposed. Permanent loss avoided only with expert surgery (DC 22).", "DC 22"], ["19", "Cut to major organ (liver/kidney)", "1d6 / hour", "1 CON/round; perm -2 CON if survived", "Organ loss has additional long-term effects.", "DC 20"], ["20", "Bisected at waist", "—", "CON set to 0", "Dead. No saves.", "—"]]}, "Arm": {"desc": "Arm base AC 12. Wounds skew toward functional loss (tendons, STR) and staged limb severance.", "rows": [["1-6", "Minor cut to arm", "1d4-1 / hour", "—", "Minor.", "DC 8"], ["7-10", "Major cut to arm", "2d4 / hour", "—", "Moderate infection risk.", "DC 13"], ["11-13", "Cut tendon / nerve", "—", "Perm -1 STR (this arm) if unrepaired in 1 week", "Disadvantage on all STR/DEX checks using this arm until healed. Surgery DC 18.", "DC 13"], ["14-15", "Severed artery (arm)", "2d6 / minute", "1 CON / minute", "Tourniquet effective. Death in 5-10 min untreated.", "DC 16"], ["16", "Severed fingers", "Major Cut effect", "-1 DEX if dominant hand & 2+ lost", "Lose 1d4 fingers (roll Minor Appendage Table). Permanent.", "DC 13"], ["17", "Severed hand", "Severed Artery effect", "Permanent -2 STR (grip)", "Lose hand at wrist. Cannot wield two-handed weapons; cannot dual-wield.", "DC 16"], ["18", "Severed forearm", "Severed Artery effect", "Permanent -3 STR (arm gone)", "Lose arm at elbow. Cannot use the arm at all.", "DC 16"], ["19", "Severed upper arm", "3d6/min + extra 2 CON over 5 min", "Permanent -3 STR, -1 CON", "Lose entire arm. Massive blood loss from shoulder stump.", "DC 18"], ["20", "Severed at shoulder", "2d6 immediate + Severed Artery", "CON set to 1 if survived; perm -3 STR, -2 CON", "Shock damage on top of severance. Weeks of recovery.", "DC 20"]]}, "Leg": {"desc": "Leg base AC 12. Wounds skew toward mobility loss (speed, hamstring) and staged limb severance.", "rows": [["1-6", "Minor cut to leg", "1d4-1 / hour", "—", "Minor.", "DC 8"], ["7-10", "Major cut to leg", "2d4 / hour", "—", "Speed halved until bandaged. Moderate infection risk.", "DC 13"], ["11-13", "Cut tendon / hamstring", "—", "Perm -1 DEX if unrepaired in 1 week", "Speed reduced to 10 ft until healed. Disadvantage on DEX saves & Athletics. Surgery DC 18.", "DC 13"], ["14-15", "Severed femoral / leg artery", "3d6 / minute", "1 CON / minute", "Tourniquet effective. Death in 5-10 min untreated.", "DC 16"], ["16", "Severed toes", "Major Cut effect", "-1 DEX if 3+ toes lost (balance)", "Lose 1d4 toes (roll Minor Appendage Table). Permanent.", "DC 13"], ["17", "Severed foot", "Severed Artery effect", "Permanent -1 DEX", "Lose foot at ankle. Speed halved without prosthetic.", "DC 16"], ["18", "Severed lower leg", "Severed Artery effect", "Permanent -2 DEX", "Lose leg at knee. Speed permanently halved without prosthetic.", "DC 16"], ["19", "Severed upper leg", "3d6/min + extra 2 CON over 5 min", "Permanent -3 DEX", "Lose entire leg. Speed reduced to 5 ft without prosthetic.", "DC 18"], ["20", "Severed at hip", "2d6 immediate + Severed Artery", "CON set to 1 if survived; perm -3 DEX, -2 CON", "Shock damage on top of severance.", "DC 20"]]}}, "Piercing": {"Head": {"desc": "Head/Neck base AC 14. Piercing reaches the brain, eyes, and throat directly — comparatively little surface bleed but devastating sensory and neurological outcomes. The eye is a gateway to the brain.", "rows": [["1-5", "Shallow facial puncture", "1d2-1 / hour", "—", "Minor. Moderate infection risk.", "DC 8"], ["6-9", "Deep cheek / jaw puncture", "1d4 / hour", "—", "HIGH infection risk (debris driven deep): DC 12 to clean every 24 hr.", "DC 10"], ["10-12", "Punctured eye", "—", "Permanent -2 WIS; roll d4 on 4: also 1 INT", "Permanent blindness in that eye, disadvantage on ranged attacks. On d4=4 the point reached the brain (1 INT).", "DC 14"], ["13-14", "Punctured windpipe", "1d4 / hour", "1 CON / hour", "Cannot speak; difficulty breathing (disadvantage on CON saves). Infection risk.", "DC 14"], ["15-16", "Neck puncture into artery", "2d6 / minute", "1 CON / minute", "No tourniquet. Sustained pressure or death in ~8 min.", "DC 18"], ["17", "Puncture into base of skull", "—", "1 INT, 1 WIS (persistent); 1 CON / hour", "Brain bleed. Unconscious within 1d4 minutes without treatment.", "DC 20"], ["18", "Through eye into brain", "—", "1 CON / round; permanent -2 INT if survived", "Dying within ~30 seconds without divine intervention.", "DC 22"], ["19", "Brain-stem puncture", "—", "1 CON / round", "Dead within ~10 seconds without divine intervention.", "DC 22"], ["20", "Pierced through skull / spinal cord", "—", "CON set to 0", "Dead. No saves.", "—"]]}, "Chest": {"desc": "Chest base AC 10. Piercing reaches the lungs and heart — the punctured lung is the signature wound. Internal injury with modest surface bleed but severe systemic effects.", "rows": [["1-6", "Shallow chest puncture", "1d2 / hour", "—", "Minor. Moderate infection risk.", "DC 8"], ["7-10", "Deep chest-muscle puncture", "1d4 / hour", "-1 STR (persistent)", "HIGH infection risk: DC 13 to clean every 24 hr.", "DC 12"], ["11-13", "Punctured Lung", "1d4 / hour", "-2 STR, -2 CON (persistent)", "Cannot run. Disadvantage on CON saves. Heals over 3+ weeks with treatment. Infection risk.", "DC 14"], ["14-15", "Tension pneumothorax (both/severe)", "1d6 / hour", "-2 STR, -3 CON; 1 CON / 10 min", "Lung collapse worsening. Needs decompression (DC 16 medicine) or the CON drain continues.", "DC 16"], ["16-17", "Punctured major vessel", "2d6 / minute", "1 CON / minute", "Internal bleed — cannot bandage externally. Requires surgery/pressure at the wound (DC 18).", "DC 18"], ["18", "Punctured lung + vessel", "3d6 / minute", "2 CON / minute", "Unconscious within 2 rounds. Death within 5.", "DC 20"], ["19", "Punctured heart", "—", "1 CON / round", "Dead within ~10-15 seconds without divine intervention.", "DC 22"], ["20", "Pierced through heart / aorta", "—", "CON set to 0", "Dead. No saves.", "—"]]}, "Abdomen": {"desc": "Abdomen base AC 11. The deadliest piercing location for slow death: gut punctures spill contents and cause near-certain sepsis. CON drains over days as infection sets in.", "rows": [["1-6", "Shallow belly puncture", "1d2 / hour", "—", "Even shallow belly wounds carry infection risk: DC 12 every 24 hr.", "DC 8"], ["7-10", "Deep gut puncture (Punctured Gut)", "1d4 / hour", "1 CON / day", "SEVERE infection: DC 16 CON save every 12 hr or progress to sepsis. -1 STR perm if untreated.", "DC 13"], ["11-13", "Punctured intestine", "1d4 / hour", "1 CON / day (2 CON/day if septic)", "Near-certain sepsis without sterilization. DC 18 CON save every 8 hr.", "DC 15"], ["14-15", "Punctured kidney / liver", "2d4 / hour (internal)", "1 CON / hour; perm -1 CON", "Internal bleed — cannot bandage. Requires surgery (DC 18) or rest. Organ loss is long-term.", "DC 16"], ["16-17", "Multiple organ puncture", "2d6 / minute (internal)", "1 CON / minute; perm -2 CON", "Internal hemorrhage + sepsis risk stacked. Surgery DC 20.", "DC 18"], ["18", "Punctured major abdominal vessel", "3d6 / minute", "2 CON / minute", "Internal bleed. Unconscious within 2-3 rounds.", "DC 20"], ["19", "Punctured abdominal aorta", "—", "1 CON / round; perm -2 CON if survived", "Dying within ~30 seconds without divine intervention.", "DC 22"], ["20", "Pierced through spine / aorta", "—", "CON set to 0", "Dead. No saves.", "—"]]}, "Arm": {"desc": "Arm base AC 12. Piercing disables through tendon/nerve damage and can impale (pin) the limb. Catastrophic results target the axillary artery at the armpit.", "rows": [["1-6", "Shallow arm puncture", "1d2-1 / hour", "—", "Minor. Moderate infection risk.", "DC 8"], ["7-10", "Deep arm puncture", "1d4 / hour", "—", "HIGH infection risk: DC 12 every 24 hr.", "DC 12"], ["11-13", "Punctured tendon / nerve", "—", "Perm -1 STR or -1 DEX (choose) if unrepaired 1 week", "Disadvantage on STR/DEX checks with this arm until healed. Surgery DC 18.", "DC 13"], ["14-15", "Punctured artery (arm)", "2d6 / minute", "1 CON / minute", "Tourniquet effective. Death in 5-10 min untreated.", "DC 16"], ["16", "Impaled arm (weapon stuck)", "1d4 / round while impaled", "—", "Arm unusable until weapon removed (action). Removal causes a Major Cut. ", "DC 13"], ["17", "Punctured / shattered joint (elbow)", "1d4 / hour", "Permanent -2 STR (this arm)", "Joint mobility lost; limited arm use. Surgery may partly restore (DC 20).", "DC 16"], ["18", "Deep puncture severing function", "1d6 / hour", "Permanent -2 STR, disadvantage with arm", "Major nerve/muscle group destroyed. Largely non-functional arm.", "DC 16"], ["19", "Punctured to bone + artery", "2d6 / minute", "Permanent -3 STR, -1 CON", "Severe structural and vascular damage. Likely loss of arm function.", "DC 18"], ["20", "Axillary artery puncture (armpit)", "3d6 / minute", "2 CON / minute; CON set to 1 if survived", "Vital-gap point. Massive rapid blood loss. Death likely within minutes without immediate care.", "DC 20"]]}, "Leg": {"desc": "Leg base AC 12. Piercing disables mobility through tendon/hamstring damage and can pin the limb. Catastrophic results target the femoral artery at the groin.", "rows": [["1-6", "Shallow leg puncture", "1d2-1 / hour", "—", "Minor. Moderate infection risk.", "DC 8"], ["7-10", "Deep leg puncture", "1d4 / hour", "—", "HIGH infection risk: DC 12 every 24 hr.", "DC 12"], ["11-13", "Punctured tendon / hamstring", "—", "Perm -1 DEX if unrepaired 1 week", "Speed reduced to 10 ft until healed. Disadvantage on DEX saves & Athletics. Surgery DC 18.", "DC 13"], ["14-15", "Punctured femoral artery", "3d6 / minute", "1 CON / minute", "Tourniquet effective. Death in 5-10 min untreated.", "DC 16"], ["16", "Impaled leg (weapon stuck)", "1d4 / round while impaled", "Speed halved", "Leg unusable for running until weapon removed. Removal causes a Major Cut.", "DC 13"], ["17", "Punctured / shattered knee", "1d4 / hour", "Permanent -2 DEX", "Joint destroyed; severe speed loss (speed 10 ft). Surgery may partly restore (DC 20).", "DC 16"], ["18", "Deep puncture severing function", "1d6 / hour", "Permanent -2 DEX; prone risk", "Major muscle group destroyed. Largely non-functional leg.", "DC 16"], ["19", "Punctured to bone + artery", "3d6 / minute", "Permanent -3 DEX, -1 CON", "Severe structural and vascular damage. Likely loss of leg function.", "DC 18"], ["20", "Femoral artery puncture (groin)", "3d6 / minute", "2 CON / minute; CON set to 1 if survived", "Vital-gap point. Massive rapid blood loss. Death likely within minutes without immediate care.", "DC 20"]]}}, "Bludgeoning": {"Head": {"desc": "Head/Neck base AC 14. Bludgeoning causes concussion, skull fracture, and brain trauma. Skin stays intact (low infection) but mental attributes and consciousness are the casualties. Knockout territory.", "rows": [["1-5", "Glancing blow", "—", "—", "Dazed. Disadvantage on the next attack/check this round.", "—"], ["6-9", "Mild concussion", "—", "-1 INT, -1 WIS (temporary, 1 long rest)", "Roll d4 on each INT/WIS check or save: on 4, lose concentration / take a Stunned reaction.", "DC 10"], ["10-12", "Moderate concussion", "—", "-2 INT, -2 WIS (recover 1 / long rest)", "Stunned 1 round now. Disadvantage on INT/WIS checks until recovered.", "DC 12"], ["13-14", "Broken nose / jaw / teeth", "1d4 / hour (nosebleed)", "-1 CHA (persistent)", "Cannot speak clearly (disadvantage on verbal CHA). Broken teeth permanent without dentistry.", "DC 12"], ["15-16", "Severe concussion", "—", "-3 INT, -3 WIS (recover 1 / long rest)", "Stunned 1d4 rounds. Then unconscious-risk: DC 14 CON or fall unconscious 1d10 min.", "DC 14"], ["17", "Skull fracture", "—", "-2 INT (persistent); 1 CON / hour (swelling)", "Unconscious 1d4 hours. Brain swelling: without treatment the CON drain continues toward death.", "DC 18"], ["18", "Cracked skull, brain bleed", "—", "1 INT & 1 CON / hour", "Unconscious. Steady decline; needs surgery (trepanation, DC 20) to relieve pressure.", "DC 20"], ["19", "Crushed skull", "—", "1 CON / round; perm -3 INT if survived", "Massive trauma. Dying within ~1 minute without divine intervention.", "DC 22"], ["20", "Skull pulped / neck broken", "—", "CON set to 0", "Dead. No saves.", "—"]]}, "Chest": {"desc": "Chest base AC 10. Bludgeoning breaks ribs and concusses the organs beneath. Bleeding is INTERNAL — it cannot be bandaged and requires rest, surgery, or magic. A blow to the heart can stop it outright.", "rows": [["1-6", "Bruised chest", "—", "—", "Disadvantage on STR/CON checks 1d4 rounds (winded).", "—"], ["7-10", "Cracked ribs", "—", "-1 STR, -1 CON (persistent)", "Pain on exertion: disadvantage on STR checks & CON saves. Heals ~2 weeks.", "DC 12"], ["11-13", "Broken ribs", "—", "-2 STR, -1 CON (persistent)", "Cannot run. Roll d6 on each heavy exertion: on 6, a rib punctures the lung (apply Punctured Lung).", "DC 14"], ["14-15", "Broken ribs + internal bleeding", "1d4 / hour (INTERNAL)", "-2 STR, -2 CON", "Internal bleed CANNOT be bandaged — only rest, surgery (DC 16), or magic stops it.", "DC 16"], ["16-17", "Flail chest (multiple breaks)", "1d6 / hour (INTERNAL)", "-3 STR, -3 CON; 1 CON / hour", "Severe breathing impairment. Internal bleed + ongoing CON loss until surgery (DC 18).", "DC 18"], ["18", "Cardiac contusion", "—", "1 CON / round for 1d4 rounds, then 1 CON / 10 min", "Heart-rhythm disruption. DC 18 CON save each round or the rhythm worsens (drain continues).", "DC 20"], ["19", "Crushed chest", "2d6 / minute (INTERNAL)", "2 CON / minute; perm -2 CON if survived", "Massive internal hemorrhage. Unconscious within 2 rounds.", "DC 22"], ["20", "Caved-in ribcage / heart stopped", "—", "CON set to 0", "Dead. No saves.", "—"]]}, "Abdomen": {"desc": "Abdomen base AC 11. Bludgeoning ruptures internal organs with little external sign — the danger is hidden internal bleeding that drains CON over time and is easy to underestimate until collapse.", "rows": [["1-6", "Bruised abdomen", "—", "—", "Winded: disadvantage on STR/CON checks 1d4 rounds.", "—"], ["7-10", "Deep abdominal bruise", "—", "-1 STR, -1 CON (persistent)", "Possible hidden injury. Heals ~1 week. Watch for delayed internal bleeding.", "DC 12"], ["11-13", "Ruptured spleen / organ (minor)", "1d4 / hour (INTERNAL)", "1 CON / hour", "No external wound to bandage. Internal bleed needs rest or surgery (DC 16). Easy to miss until weak.", "DC 14"], ["14-15", "Ruptured organ (major)", "2d4 / hour (INTERNAL)", "1 CON / hour; perm -1 CON", "Significant internal hemorrhage. Surgery (DC 18) required to stop; organ loss is long-term.", "DC 16"], ["16-17", "Multiple organ rupture", "1d6 / 10 min (INTERNAL)", "1 CON / 10 min; perm -2 CON", "Severe internal bleed. Without surgery (DC 20), steady decline.", "DC 18"], ["18", "Massive internal hemorrhage", "3d6 / minute (INTERNAL)", "2 CON / minute", "Cannot bandage. Unconscious within 2-3 rounds. Surgery DC 22.", "DC 22"], ["19", "Crushed organs", "—", "1 CON / round; perm -3 CON if survived", "Dying within ~1 minute without divine intervention.", "DC 22"], ["20", "Abdomen crushed / spine shattered", "—", "CON set to 0", "Dead. No saves.", "—"]]}, "Arm": {"desc": "Arm base AC 12. Bludgeoning shatters bone and joints — the arm becomes unusable. STR is the casualty, and crushing damage can necessitate amputation.", "rows": [["1-6", "Bruised arm", "—", "—", "Disadvantage on STR/DEX checks with this arm 1d4 rounds.", "—"], ["7-10", "Hairline fracture / deep bruise", "—", "-1 STR (this arm, persistent)", "Disadvantage on STR checks with the arm. Heals ~2 weeks.", "DC 10"], ["11-13", "Broken forearm", "—", "-2 STR (this arm, persistent)", "Cannot wield two-handed weapons; disadvantage with this arm. Heals 6 weeks with setting (DC 13).", "DC 13"], ["14-15", "Compound / severe fracture", "1d4 / hour (if bone breaks skin)", "-3 STR (this arm)", "Arm unusable until set & healed (6-8 weeks). If compound, infection risk.", "DC 15"], ["16", "Shattered hand", "—", "Permanent -2 STR (grip)", "Cannot grip with this hand. Cannot wield two-handed or dual-wield. Partial surgery (DC 18).", "DC 14"], ["17", "Shattered elbow joint", "—", "Permanent -2 STR; disadvantage with arm", "Joint destroyed. Arm mostly non-functional. Surgery may partly restore (DC 20).", "DC 16"], ["18", "Crushed arm", "1d4 / hour (INTERNAL)", "Permanent -3 STR", "May require amputation (DC 18 to save the limb). Largely non-functional regardless.", "DC 18"], ["19", "Pulped arm", "2d4 / minute (INTERNAL)", "Permanent -3 STR, -1 CON", "Amputation almost certainly required. Internal bleed + shock.", "DC 20"], ["20", "Arm destroyed at shoulder", "2d6 / minute (INTERNAL)", "2 CON / min; CON set to 1 if survived", "Amputation required. Massive shock and blood loss.", "DC 20"]]}, "Leg": {"desc": "Leg base AC 12. Bludgeoning shatters bone and joints — mobility is the casualty. DEX and speed suffer, and crushing damage can necessitate amputation.", "rows": [["1-6", "Bruised leg", "—", "—", "Speed reduced by 5 ft for 1d4 rounds.", "—"], ["7-10", "Hairline fracture / deep bruise", "—", "-1 DEX (persistent)", "Speed halved. Disadvantage on DEX saves. Heals ~2 weeks.", "DC 10"], ["11-13", "Broken leg", "—", "-2 DEX (persistent)", "Speed reduced to 5-10 ft. Cannot run. Heals 6 weeks with setting (DC 13).", "DC 13"], ["14-15", "Compound / severe fracture", "1d4 / hour (if bone breaks skin)", "-3 DEX", "Prone; cannot stand unaided until set & healed (6-8 weeks). If compound, infection risk.", "DC 15"], ["16", "Shattered foot", "—", "Permanent -1 DEX", "Speed permanently halved without prosthetic/cane. Partial surgery (DC 18).", "DC 14"], ["17", "Shattered knee", "—", "Permanent -2 DEX", "Joint destroyed. Severe speed loss (10 ft). Surgery may partly restore (DC 20).", "DC 16"], ["18", "Crushed leg", "1d4 / hour (INTERNAL)", "Permanent -3 DEX", "May require amputation (DC 18 to save the limb). Speed 5 ft regardless.", "DC 18"], ["19", "Pulped leg", "2d4 / minute (INTERNAL)", "Permanent -3 DEX, -1 CON", "Amputation almost certainly required. Internal bleed + shock.", "DC 20"], ["20", "Leg destroyed at hip", "2d6 / minute (INTERNAL)", "2 CON / min; CON set to 1 if survived", "Amputation required. Massive shock and blood loss.", "DC 20"]]}}}, "ac": {"Head": 14, "Chest": 10, "Abdomen": 11, "Arm": 12, "Leg": 12}, "affinity": {"Slashing": "Cuts, severed arteries, limb severance. Drains CON (blood loss) and STR (severed limb). Moderate infection risk.", "Piercing": "Punctures, organ damage, deep wounds. Drains CON (organs), STR (limb), DEX (tendon). HIGH infection risk — debris driven deep.", "Bludgeoning": "Bruises, broken bones, concussion, internal injury. Drains STR (break), INT/WIS (concussion), CON (internal). Low infection risk (skin intact)."}, "hex": {"Slashing": "#A23B34", "Piercing": "#3C6090", "Bludgeoning": "#80683E"}, "all_dtypes": [{"name": "Slashing", "color": "#A23B34", "ready": true}, {"name": "Piercing", "color": "#3C6090", "ready": true}, {"name": "Bludgeoning", "color": "#80683E", "ready": true}, {"name": "Acid", "color": "#5E8C3C", "ready": false}, {"name": "Cold", "color": "#4FA3C7", "ready": false}, {"name": "Fire", "color": "#D2691E", "ready": false}, {"name": "Force", "color": "#7A6FB0", "ready": false}, {"name": "Lightning", "color": "#C9A227", "ready": false}, {"name": "Necrotic", "color": "#4A5240", "ready": false}, {"name": "Radiant", "color": "#C7A86B", "ready": false}, {"name": "Poison", "color": "#6B9E5E", "ready": false}, {"name": "Psychic", "color": "#9C5C8C", "ready": false}, {"name": "Thunder", "color": "#6E7E8C", "ready": false}]};
+
+let curLoc = null, curDT = null;
+
+/* ---- body figure SVG ---- */
+const FIG = `
+<svg viewBox="0 0 240 470" width="230" height="450" role="img" aria-label="human body">
+  <g class="zone" data-loc="Head">
+    <ellipse cx="120" cy="50" rx="30" ry="36"/>
+    <path d="M108,82 L132,82 L130,98 L110,98 Z"/>
+    <text class="zone-label" x="120" y="54" text-anchor="middle">Head</text>
+  </g>
+  <g class="zone" data-loc="Chest">
+    <path d="M86,96 Q120,86 154,96 L162,118 L160,176 L80,176 L78,118 Z"/>
+    <text class="zone-label" x="120" y="142" text-anchor="middle">Chest</text>
+  </g>
+  <g class="zone" data-loc="Abdomen">
+    <path d="M80,180 L160,180 L155,236 Q120,250 85,236 Z"/>
+    <text class="zone-label" x="120" y="212" text-anchor="middle">Abdomen</text>
+  </g>
+  <g class="zone" data-loc="Arm">
+    <path d="M78,104 L60,116 L48,206 L44,256 L60,258 L66,210 L82,132 Z"/>
+    <path d="M162,104 L180,116 L192,206 L196,256 L180,258 L174,210 L158,132 Z"/>
+    <text class="zone-label" x="40" y="170" text-anchor="middle" transform="rotate(-8 40 170)">Arm</text>
+    <text class="zone-label" x="200" y="170" text-anchor="middle" transform="rotate(8 200 170)">Arm</text>
+  </g>
+  <g class="zone" data-loc="Leg">
+    <path d="M86,240 L117,240 L115,338 L109,458 L88,458 L83,338 Z"/>
+    <path d="M123,240 L154,240 L157,338 L152,458 L131,458 L125,338 Z"/>
+    <text class="zone-label" x="101" y="360" text-anchor="middle">Leg</text>
+    <text class="zone-label" x="140" y="360" text-anchor="middle">Leg</text>
+  </g>
+</svg>`;
+
+const figwrap = document.getElementById('figwrap');
+figwrap.innerHTML = FIG;
+figwrap.querySelectorAll('.zone').forEach(z=>{
+  z.addEventListener('click', ()=> selectLoc(z.dataset.loc));
+});
+
+function selectLoc(loc){
+  curLoc = loc; curDT = null;
+  figwrap.querySelectorAll('.zone').forEach(z=>{
+    z.classList.toggle('active', z.dataset.loc===loc);
+  });
+  document.getElementById('fighint').textContent = loc + ' selected';
+  buildDTPanel();
+  renderMain();
+}
+
+function buildDTPanel(){
+  document.getElementById('dtpanel').style.display='block';
+  const grid = document.getElementById('dtgrid');
+  grid.innerHTML='';
+  DB.all_dtypes.forEach(dt=>{
+    const b=document.createElement('button');
+    b.className='dt-btn'+(dt.ready?'':' disabled')+(curDT===dt.name?' active':'');
+    if(curDT===dt.name) b.style.background=dt.color;
+    b.innerHTML = `<span class="dot" style="background:${dt.color}"></span>${dt.name}`+
+      (dt.ready?'':'<span class="tag">soon</span>');
+    if(dt.ready) b.addEventListener('click', ()=>{ curDT=dt.name; buildDTPanel(); renderMain(); });
+    grid.appendChild(b);
+  });
+  const ac = DB.ac[curLoc];
+  document.getElementById('locmeta').innerHTML =
+    `<b>${curLoc}</b> &mdash; base AC <b>${ac}</b> (before DEX / WIS / proficiency &amp; armor tier).`;
+}
+
+function severityStyle(idx, total, baseHex){
+  // pale -> saturated gradient down the table
+  const t = total<=1?0:idx/(total-1);
+  const alpha = 0.06 + t*0.30;
+  return `background:${hexA(baseHex,alpha)};`;
+}
+function hexA(hex,a){
+  const n=parseInt(hex.slice(1),16);
+  const r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+  return `rgba(${r},${g},${b},${a.toFixed(3)})`;
+}
+
+function renderMain(){
+  const main=document.getElementById('main');
+  if(!curLoc){ return; }
+  if(!curDT){
+    main.innerHTML = `<div class="placeholder">
+      <div class="big">${curLoc}</div>
+      <div>Now choose a damage type on the left to see the wound table.</div></div>`;
+    return;
+  }
+  const hex = DB.hex[curDT];
+  const entry = DB.wounds[curDT][curLoc];
+  const rows = entry.rows;
+  let html = `
+    <div class="result-head">
+      <span class="pill" style="background:${hex}">${curDT}</span>
+      <h2>${curLoc}</h2>
+    </div>
+    <div class="affinity">${DB.affinity[curDT]}</div>
+    <div class="acline">${entry.desc}</div>
+    <div class="acline">Base AC for this location:
+      <span class="chip">${DB.ac[curLoc]}</span>
+      &nbsp;Roll <b>d20 + wound modifiers</b>, cap at 20.</div>
+    <table class="wt">
+      <thead><tr style="background:${hex}">
+        <th style="text-align:center">d20</th><th>Wound</th><th>HP Damage</th>
+        <th>Attribute Damage</th><th>Other Effects</th><th style="text-align:center">Med. DC</th>
+      </tr></thead><tbody>`;
+  rows.forEach((r,i)=>{
+    const mortal = (r[4]||'').includes('Dead. No saves') || (r[3]||'').includes('set to 0');
+    const style = mortal ? '' : severityStyle(i, rows.length, hex);
+    const dash = v => (v==='\u2014'||v==='')?'<span class="dash">\u2014</span>':v;
+    html += `<tr class="${mortal?'mortal':''}" ${mortal?'':`style="${style}"`}>
+      <td class="roll">${r[0]}</td>
+      <td class="wound">${r[1]}</td>
+      <td class="hp">${dash(r[2])}</td>
+      <td class="attr">${dash(r[3])}</td>
+      <td>${dash(r[4])}</td>
+      <td class="dc">${dash(r[5])}</td></tr>`;
+  });
+  html += `</tbody></table>
+    <div class="legend">
+      <span><b>HP Damage</b> = bleed/ongoing, scales with durability</span>
+      <span><b>Attribute Damage</b> = does NOT scale; CON to 0 = death</span>
+      <span><b>Med. DC</b> = Medicine check to stabilize</span>
+    </div>
+    <div class="foot">Wound rule: every landed hit wounds — the d100 roll is graded by the blow-to-toughness ratio. Crit and Punishing Strike add +25; Vital Gap adds +20 and bypasses region toughness. Serious+ is a roll of 41 or better. (This page predates the change and its ladders read at d20 resolution; the live tool is Codex.html.) Superseded trigger text: a hit that drops the target to 0 RHP. Thresholds use MAX Real HP &mdash; magical healing does not make you wound-resistant.</div>`;
+  main.innerHTML = html;
+}
+</script>
+</body>
+</html>

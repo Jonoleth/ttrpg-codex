@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Regional-Stat System — State of Play</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+  :root{
+    --paper:#EDF0F2; --surface:#F7F9FA; --surface-2:#E3E8EB;
+    --ink:#151A20; --ink-soft:#55606B; --ink-faint:#7B8791;
+    --rule:#C7D1D8; --rule-soft:#DBE2E7;
+    --oxblood:#8C2F2A; --verdigris:#2A6560;
+    --b1:#A2B0B8; --b2:#C09340; --b3:#BB6B33; --b4:#9B3A2E; --b5:#5E1A18;
+    --band-ink:#FFFFFF;
+    --font-display:ui-sans-serif,system-ui,-apple-system,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+    --font-body:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+    --font-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --paper:#0E1317; --surface:#161D23; --surface-2:#1E272E;
+      --ink:#E4E9EC; --ink-soft:#9AA7B1; --ink-faint:#76838D;
+      --rule:#2B363F; --rule-soft:#212B33;
+      --oxblood:#D06B5F; --verdigris:#55A79F;
+      --b1:#6E7E88; --b2:#C2953F; --b3:#C4763D; --b4:#B04739; --b5:#7A2420;
+      --band-ink:#0E1317;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0E1317; --surface:#161D23; --surface-2:#1E272E;
+    --ink:#E4E9EC; --ink-soft:#9AA7B1; --ink-faint:#76838D;
+    --rule:#2B363F; --rule-soft:#212B33;
+    --oxblood:#D06B5F; --verdigris:#55A79F;
+    --b1:#6E7E88; --b2:#C2953F; --b3:#C4763D; --b4:#B04739; --b5:#7A2420;
+    --band-ink:#0E1317;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--font-body); font-size:17px; line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:0 28px 96px}
+  .measure{max-width:68ch}
+
+  /* ---- masthead ---- */
+  header.mast{border-bottom:2px solid var(--ink); padding:56px 0 22px; margin-bottom:44px}
+  .kicker{
+    font-family:var(--font-display); font-size:11px; font-weight:700;
+    letter-spacing:.18em; text-transform:uppercase; color:var(--oxblood); margin:0 0 18px;
+  }
+  h1{
+    font-family:var(--font-display); font-weight:800; letter-spacing:-.025em;
+    font-size:clamp(2.1rem,5.2vw,3.4rem); line-height:1.04; margin:0 0 18px;
+    text-wrap:balance; max-width:20ch;
+  }
+  .standfirst{font-size:1.16rem; color:var(--ink-soft); margin:0; max-width:60ch; text-wrap:pretty}
+  .mast-meta{
+    display:flex; flex-wrap:wrap; gap:10px 28px; margin-top:26px;
+    font-family:var(--font-mono); font-size:12px; color:var(--ink-faint);
+  }
+  .mast-meta b{color:var(--ink-soft); font-weight:500}
+
+  /* ---- sections ---- */
+  section{margin:0 0 60px; scroll-margin-top:20px}
+  .sec-head{display:flex; align-items:baseline; gap:16px; border-bottom:1px solid var(--rule); padding-bottom:10px; margin-bottom:26px}
+  .sec-num{
+    font-family:var(--font-mono); font-size:12px; color:var(--oxblood);
+    font-weight:600; letter-spacing:.06em; flex:none; padding-top:4px;
+  }
+  h2{
+    font-family:var(--font-display); font-weight:750; letter-spacing:-.015em;
+    font-size:clamp(1.35rem,2.6vw,1.72rem); margin:0; line-height:1.2; text-wrap:balance;
+  }
+  h3{
+    font-family:var(--font-display); font-weight:700; font-size:1.02rem;
+    letter-spacing:-.005em; margin:34px 0 12px; line-height:1.3;
+  }
+  p{margin:0 0 16px; text-wrap:pretty}
+  a{color:var(--oxblood)}
+  strong{font-weight:600}
+  em{font-style:italic}
+  code,.mono{font-family:var(--font-mono); font-size:.86em; font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2); padding:.1em .38em; border-radius:2px}
+  ul{margin:0 0 16px; padding-left:1.15em}
+  li{margin-bottom:9px}
+  .ref{font-family:var(--font-mono); font-size:.8em; color:var(--ink-faint); white-space:nowrap}
+
+  /* ---- data blocks ---- */
+  .scroller{overflow-x:auto; margin:0 0 22px; border:1px solid var(--rule); background:var(--surface)}
+  table{border-collapse:collapse; width:100%; font-size:14.5px; min-width:520px}
+  th,td{text-align:left; padding:10px 14px; border-bottom:1px solid var(--rule-soft); vertical-align:top}
+  thead th{
+    font-family:var(--font-display); font-size:10.5px; font-weight:700; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--ink-faint); background:var(--surface-2);
+    border-bottom:1px solid var(--rule); white-space:nowrap;
+  }
+  tbody tr:last-child td{border-bottom:none}
+  td.num,th.num{text-align:right; font-family:var(--font-mono); font-variant-numeric:tabular-nums; white-space:nowrap}
+  td.k{font-family:var(--font-display); font-weight:650; font-size:13.5px; white-space:nowrap}
+
+  /* ---- severity ramp ---- */
+  .ramp{display:grid; grid-template-columns:repeat(5,1fr); gap:3px; margin:0 0 8px}
+  .band{padding:12px 12px 14px; color:var(--band-ink); display:flex; flex-direction:column; gap:3px; min-height:104px}
+  .band:nth-child(1){background:var(--b1)} .band:nth-child(2){background:var(--b2)}
+  .band:nth-child(3){background:var(--b3)} .band:nth-child(4){background:var(--b4)}
+  .band:nth-child(5){background:var(--b5)}
+  .band .bn{font-family:var(--font-display); font-size:11px; font-weight:750; letter-spacing:.07em; text-transform:uppercase}
+  .band .br{font-family:var(--font-mono); font-size:12px; opacity:.85; font-variant-numeric:tabular-nums}
+  .band .bt{font-family:var(--font-mono); font-size:19px; font-weight:600; margin-top:auto; font-variant-numeric:tabular-nums}
+  .band .bl{font-size:10.5px; opacity:.8; font-family:var(--font-display); letter-spacing:.04em}
+  .ramp-cap{font-size:13px; color:var(--ink-faint); margin:0 0 24px; font-style:italic}
+
+  /* ---- pipeline ---- */
+  .pipe{border-left:2px solid var(--rule); padding-left:0; margin:0 0 24px; list-style:none}
+  .pipe li{
+    position:relative; padding:0 0 22px 26px; margin:0;
+  }
+  .pipe li::before{
+    content:""; position:absolute; left:-5px; top:9px; width:8px; height:8px;
+    background:var(--oxblood); border-radius:50%;
+  }
+  .pipe .step{
+    font-family:var(--font-display); font-size:11px; font-weight:700; letter-spacing:.11em;
+    text-transform:uppercase; color:var(--ink-faint); display:block; margin-bottom:4px;
+  }
+  .pipe .formula{
+    font-family:var(--font-mono); font-size:13.5px; background:var(--surface);
+    border:1px solid var(--rule); padding:8px 12px; display:block; margin:8px 0 0;
+    overflow-x:auto; white-space:pre;
+  }
+
+  /* ---- verdict cards ---- */
+  .verdicts{display:grid; gap:2px; background:var(--rule); border:1px solid var(--rule); margin:0 0 24px}
+  .v{background:var(--surface); padding:16px 18px}
+  .v .vh{
+    font-family:var(--font-display); font-weight:700; font-size:14.5px; margin:0 0 6px;
+    display:flex; align-items:baseline; gap:9px;
+  }
+  .v p{margin:0; font-size:14.5px; color:var(--ink-soft); line-height:1.55}
+  .tag{
+    font-family:var(--font-mono); font-size:10px; font-weight:600; letter-spacing:.08em;
+    text-transform:uppercase; padding:2px 6px; border-radius:2px; flex:none;
+  }
+  .t-good{background:var(--verdigris); color:var(--paper)}
+  .t-bad{background:var(--oxblood); color:var(--paper)}
+  .t-warn{background:var(--b2); color:var(--band-ink)}
+
+  /* ---- callout ---- */
+  .note{
+    border-left:3px solid var(--oxblood); background:var(--surface); padding:14px 18px;
+    margin:0 0 22px; font-size:15px;
+  }
+  .note p:last-child{margin-bottom:0}
+  .note .nl{
+    font-family:var(--font-display); font-size:10.5px; font-weight:700; letter-spacing:.11em;
+    text-transform:uppercase; color:var(--oxblood); display:block; margin-bottom:6px;
+  }
+  .note.calm{border-left-color:var(--verdigris)}
+  .note.calm .nl{color:var(--verdigris)}
+
+  .lede{font-size:1.06rem; color:var(--ink-soft); max-width:64ch}
+  footer{border-top:1px solid var(--rule); padding-top:20px; margin-top:20px;
+    font-family:var(--font-mono); font-size:12px; color:var(--ink-faint)}
+  @media (max-width:720px){
+    body{font-size:16px}
+    .ramp{grid-template-columns:1fr 1fr; }
+    .band{min-height:auto}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="mast">
+  <p class="kicker">System audit · state of play</p>
+  <h1>No hit points, only flesh</h1>
+  <p class="standfirst">A complete read of the Regional-Stat TTRPG as it currently stands — what it does, what it does well, and where it is still held together by placeholders.</p>
+  <div class="mast-meta">
+    <span><b>Vitality model</b> Regional-Stat (HP module retired)</span>
+    <span><b>Wound content</b> 15 ladders · 300 rungs</span>
+    <span><b>Damage systems</b> 3 physical · 6 elemental</span>
+    <span><b>Validated by</b> Monte Carlo, <span class="mono">Health/sim/</span></span>
+  </div>
+</header>
+
+<section>
+  <div class="sec-head"><span class="sec-num">I</span><h2>The core idea</h2></div>
+  <div class="measure">
+    <p class="lede">Traditional hit points are a pool you only subtract from. They answer one question — how many more blows can I take — and never touch what you can <em>do</em>. A fighter at 1 HP swings exactly as well as one at full. This system refuses that disconnect.</p>
+    <p>There is no health bar. Instead a character is <strong>six regional stats</strong>, and each one is simultaneously a body region's durability <em>and</em> the number you roll to act with it. Wound an arm and the number you add to every attack goes down. Wound a leg and the number that sets your speed, your dodge, your initiative and your reflex saves goes down. The injury is not a bar ticking down beside an untouched character sheet — <strong>the injury is the character sheet getting worse</strong>.</p>
+    <p>Everything else in the design follows from that one move. The death spiral is structural rather than bolted on. Damage, ongoing bleed and lasting penalty collapse into a single currency instead of three parallel tracks. And because there are six regions that can fail independently, <strong>losing a fight fractures into a dozen different fates and only one of them kills you</strong>.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">II</span><h2>The body — Structure and Faculty</h2></div>
+  <div class="measure">
+    <p>Stats come in two kinds, each with one job. <strong>Structure</strong> stats are durability pools that double as raw force. <strong>Faculty</strong> stats are pool-less ratings of how well you perform a kind of action; they can be lowered but they never kill you.</p>
+  </div>
+  <div class="scroller">
+  <table>
+    <thead><tr><th>Stat</th><th>Kind</th><th>Region</th><th>Governs</th><th>At zero</th></tr></thead>
+    <tbody>
+      <tr><td class="k">CON</td><td>Structure</td><td>Torso — also grades the head</td><td>Vitality, endurance, the death clock</td><td><strong>Death</strong></td></tr>
+      <tr><td class="k">Brawn</td><td>Structure</td><td>Arms &amp; hands</td><td>Arm durability + strength, heavy weapons, grapple</td><td>Both arms fail — disarmed</td></tr>
+      <tr><td class="k">Drive</td><td>Structure</td><td>Legs &amp; feet</td><td>Leg durability + power, speed, jump, load</td><td>Prone, speed 0</td></tr>
+      <tr><td class="k">Deftness</td><td>Faculty</td><td>Hands</td><td>Fine precision — finesse weapons, aim, lockpick, somatic</td><td>No fine motor</td></tr>
+      <tr><td class="k">Agility</td><td>Faculty</td><td>Feet / body</td><td>Footwork — dodge (AC), reflex, balance, initiative</td><td>AC to floor, auto-fail reflex</td></tr>
+      <tr><td class="k">INT / WIS / CHA</td><td>Faculty</td><td>Head</td><td>Reason / perception &amp; will / presence</td><td>Catatonic / unconscious / broken</td></tr>
+      <tr><td class="k">WILL</td><td>—</td><td>None — earned</td><td>Grit; substitutes its bonus for a <em>wounded</em> stat only</td><td>No zero-state</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="measure">
+    <p>Each limb carries one of each, which is the quiet structural win: <strong>arms are guarded by Deftness (how hard to hit) and Brawn (how hard to wound)</strong>, legs by Agility and Drive. So neither limb stat is dumpable — abandon Brawn and your arm shatters easily, abandon Deftness and it's easy to hit in the first place. Weapons can scale off different stats <span class="ref">§15</span> without letting a build safely min-max one away.</p>
+    <p>The head is the odd one: three Faculties and <strong>no Structure stat of its own</strong>. Head wounds grade against CON and reduce the mental stats, routing to CON only on a lethal skull result.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">III</span><h2>Resolving one hit</h2></div>
+  <div class="measure">
+    <p>There is no proc gate and no damage number. <strong>Every landed hit is one graded wound roll</strong> against the struck region. The question is never whether you're hurt, only how badly.</p>
+  </div>
+  <ol class="pipe">
+    <li><span class="step">1 · To hit</span>The weapon's hit-stat plus Skill against the region's AC — <code>region base + Faculty mod + armor</code>. Heavy plate carries a <em>negative</em> AC bonus (you can't dodge in it) against enormous damage reduction.</li>
+    <li><span class="step">2 · Blow power</span>Weapon dice plus the damage-stat modifier. Hit-stat and damage-stat are decoupled per weapon — a poleaxe is <em>placed</em> with Deftness but <em>driven</em> by Brawn; a spear is aimed by hand and driven from the legs.<span class="formula">BlowPower = weapon dice + mod(damage-stat)</span></li>
+    <li><span class="step">3 · Armor</span>Armor does not subtract. It <em>multiplies</em>, by damage type: slashing ×1½ bare and ×⅛ against plate; piercing ×1 → ×½; blunt ×1 throughout. A versatile weapon picks whichever type is best against this target — which also selects which wound table it reads.<span class="formula">EffectiveBlowPower = BlowPower × penetration(type vs armor)</span></li>
+    <li><span class="step">4 · The ratio</span>Compare the blow to what it hit — the region's <em>current</em> Structure stat. This is the whole severity engine.<span class="formula">ratio = EffectiveBlowPower ÷ RegionToughness(current)</span></li>
+    <li><span class="step">5 · The wound roll</span>One d100, shifted by the ratio, read on the struck region's ladder. The result <em>is</em> the effect — a stat reduction, a bleed band, exhaustion, maybe incapacitation.<span class="formula">wound roll = d100 + 25·log₂(ratio) + crit</span></li>
+  </ol>
+  <div class="measure">
+    <p>Damage type selects both the armor column and the wound table, so a thrust and a chop to the same chest read genuinely different injuries — the piercing lung-punch, the slashing artery, the blunt fractured ribs. Slashing and piercing chest rungs bleed on 19 of 20 rows; blunt on only 7. That single fact is what balances blunt's armor-ignoring penetration: the maul batters and exhausts, it does not open you up.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">IV</span><h2>The ladder and the spiral</h2></div>
+  <div class="measure">
+    <p>The wound roll lands on a five-band ladder, 20 rungs per band, 300 rungs across 15 tables. Every wound also takes a <strong>structure toll</strong> — a percentage of the struck region's maximum, off the very stat that graded it.</p>
+  </div>
+  <div class="ramp">
+    <div class="band"><span class="bn">Superficial</span><span class="br">01–20</span><span class="bt">−4%</span><span class="bl">shock, blood, guard dropping</span></div>
+    <div class="band"><span class="bn">Minor</span><span class="br">21–40</span><span class="bt">−8%</span><span class="bl">a real injury working against you</span></div>
+    <div class="band"><span class="bn">Serious</span><span class="br">41–60</span><span class="bt">−15%</span><span class="bl">the region is compromised</span></div>
+    <div class="band"><span class="bn">Grievous</span><span class="br">61–80</span><span class="bt">−25%</span><span class="bl">the region is failing</span></div>
+    <div class="band"><span class="bn">Catastrophic</span><span class="br">81–100</span><span class="bt">−40%</span><span class="bl">destroyed as a functioning thing</span></div>
+  </div>
+  <p class="ramp-cap">Structure toll by band — the cut to the struck region's own Structure stat <span class="ref">§13.9</span></p>
+  <div class="measure">
+    <p>Because the toll comes off the same number that grades the next blow, combat is <strong>a ladder you climb, not a coin you flip</strong>. The curve is tuned so that the arithmetic is memorable:</p>
+  </div>
+  <div class="note calm">
+    <span class="nl">The rule</span>
+    <p><strong>Every halving of a region's toughness makes wounds there land one band deeper.</strong> A fresh same-tier exchange sits at ratio ~0.5 → <code>−25</code>, so fights open on scratches. Grind the region to half and the same swing reads Serious; to a quarter and it reads Grievous.</p>
+  </div>
+  <div class="measure">
+    <p>Measured over 3,000 duels between evenly matched mythic-tier combatants, that produces a genuine arc rather than a flat distribution:</p>
+  </div>
+  <div class="scroller">
+  <table>
+    <thead><tr><th>Round</th><th class="num">Mean severity mod</th><th class="num">Struck region, %-of-max</th><th class="num">Superficial</th><th class="num">Catastrophic</th></tr></thead>
+    <tbody>
+      <tr><td class="k">1</td><td class="num">−25.4</td><td class="num">89%</td><td class="num">44.1%</td><td class="num">1.7%</td></tr>
+      <tr><td class="k">3</td><td class="num">−23.0</td><td class="num">82%</td><td class="num">42.6%</td><td class="num">2.6%</td></tr>
+      <tr><td class="k">5</td><td class="num">−20.6</td><td class="num">76%</td><td class="num">38.5%</td><td class="num">5.4%</td></tr>
+      <tr><td class="k">6+</td><td class="num">−13.3</td><td class="num">61%</td><td class="num">32.3%</td><td class="num"><strong>11.1%</strong></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="measure">
+    <p>Killing blows rise <strong>6.5×</strong> across a duel because the region they're rolled against has lost 39% of itself. Bleed and lasting maluses are likewise percentages of maximum, so they're tier-independent by construction: <strong>a peasant and a titan bleed out in the same twenty minutes</strong> — an artery is an artery.</p>
+    <p>The same curve handles tier gaps without a special rule. A mortal swinging at a demigod sits at ratio ~0.09, floors at <code>−60</code>, and can only scratch — barring a natural 96+ or a called shot to the eye. A god swinging down at a peasant reaches <code>+58</code> and one-shots.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">V</span><h2>Losing without dying</h2></div>
+  <div class="measure">
+    <p>This is the design's biggest payoff and the hardest thing for a hit-point game to imitate. Six regions fail independently, so defeat comes in flavours: <strong>disarmed</strong> at Brawn 0 and forced to yield, <strong>downed</strong> at Drive 0 and captured, <strong>knocked out</strong> at WIS 0 and taken prisoner, <strong>blinded</strong> and made to talk. Only a torso brought to CON 0 actually kills.</p>
+    <p>Unconsciousness and death are unbundled — in an HP game "0 HP" is one shared state, here you can be knocked out far from death, or dying while still awake and horrified. A fight ends when someone is incapacitated, collapses from stacked exhaustion, loses the limb they fight with, or bleeds out. Never because a number hit zero.</p>
+    <p>A lost part resolves through a single <strong>Appendage Table</strong> — sixteen rows covering fingers through whole limbs and the senses — which owns the lasting consequence, while the wound rung that caused it owns the bleed and the infection entry. Nothing is stated twice.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">VI</span><h2>Healing — three verbs, and the debt</h2></div>
+  <div class="measure">
+    <p>A wound is treated as an <em>object</em> on your sheet, not a subtraction. Your current stat is your maximum minus the maluses of your open wounds. That gives the three healing verbs genuinely distinct jobs:</p>
+  </div>
+  <div class="scroller">
+  <table>
+    <thead><tr><th>Verb</th><th>What it touches</th><th>Duration</th><th>Fiction</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Recover</td><td>The wound's <em>true</em> malus — reduce it; at zero the wound closes and leaves the sheet</td><td>Permanent</td><td>Bone knits, tissue heals</td></tr>
+      <tr><td class="k">Mend</td><td>A <em>suppressed</em> column beside the malus. The wound is untouched.</td><td>Until next long rest</td><td>The arm works. It is not fixed.</td></tr>
+      <tr><td class="k">Ward</td><td>Points <em>above</em> the region's max; incoming maluses eat it first</td><td>Its own</td><td>Borrowed shielding</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="measure">
+    <p>Three things fall out for free. Overhealing is impossible by construction — you can only suppress up to a wound's actual severity. Mend targets a <em>wound</em>, not a stat, so choosing which injury to mask is a real decision. And because severity grades against current toughness, suppressing a malus genuinely does make you take milder wounds while it holds.</p>
+    <p>What Mend does <em>not</em> do is where the teeth are. <strong>Bleed keeps running</strong> underneath the mask. Infection keeps progressing. And fighting on a suppressed wound forces a CON save each scene — fail and the true malus worsens. Battlefield magic buys you the fight and charges you in recovery time.</p>
+  </div>
+  <div class="note">
+    <span class="nl">The sharpest rule in the document</span>
+    <p>A Mend on CON can hold your current value above zero while your <em>true</em> CON sits at zero. You are upright, conscious, acting. The bleed is still draining the real number underneath. When the suppression lapses — long rest, dispel, or the bleed simply outrunning it — <strong>you die at that moment</strong>, unless a real Recover arrived first.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">VII</span><h2>The damage ecosystem</h2></div>
+  <div class="measure">
+    <p>Three physical types read the wound ladders. Six further systems sit alongside, and the discipline here is the notable part — <strong>each new element inherits an existing skeleton rather than inventing machinery</strong>.</p>
+  </div>
+  <div class="scroller">
+  <table>
+    <thead><tr><th>System</th><th>Shape</th><th>Signature</th><th>How it ends</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Fire</td><td>Two axes — depth from <code>damage ÷ CON</code>, area from AOE</td><td>Depth is set once and never deepens</td><td>Treat the burn you got</td></tr>
+      <tr><td class="k">Cold (instant)</td><td>Reuses fire wholesale</td><td>Dead tissue routes to <em>dry</em> gangrene; Freeze &amp; Shatter on mooks</td><td>As fire</td></tr>
+      <tr><td class="k">Hypothermia</td><td>Bespoke stage clock, climb-only</td><td>You cannot roll yourself warm — shelter, then a fixed timer</td><td>Warmth</td></tr>
+      <tr><td class="k">Acid</td><td>Fire's aftermath + a clock</td><td>Deepens one degree per round; eats <em>armor</em> tier by tier first</td><td>Douse or neutralize</td></tr>
+      <tr><td class="k">Poison</td><td>Hypothermia's single-meter clock, at speed</td><td>Four families; the matched antitoxin or nothing</td><td>Antitoxin, or the dose lapses</td></tr>
+      <tr><td class="k">Necrotic</td><td>Poison's clock, made relentless</td><td>Denies <em>healing itself</em>; withers rather than kills</td><td>Only a cure — never self-limits</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="measure">
+    <p>The decay cluster is the cleanest expression of that reuse: acid is <em>external</em> decay stopped by a rinse, poison is <em>internal</em> decay stopped by an antidote, necrotic is <em>magical</em> decay stopped by a consecrated cure. One skeleton, three readings.</p>
+    <p>Running underneath all of it is a single <strong>infection engine</strong> — one stage per wound, summed into a total Load, one roll per interval for the whole body against <code>DC 10 + Load</code>. The death spiral is emergent: more accumulated rot makes everything harder to fight. At Stage 5 a wound leaves the curative track entirely and becomes gangrene, generating Load you <em>cannot</em> treat down, which forces the game's sharpest decision — amputate now and live maimed, or gamble on out-treating a wound that is actively poisoning your blood.</p>
+  </div>
+  <div class="note calm">
+    <span class="nl">What makes it playable at scale</span>
+    <p>A creature's tier is fixed once at statblock time. <strong>Fodder</strong> have no wound profile — a kill-grade hit simply drops them. <strong>Regular</strong> creatures get a super-crit instead of a table lookup. Only <strong>Elite, named and player characters</strong> run the full ladder, clocks and degrees. Without this rule the wound system would be unusable against more than two enemies, and most gritty systems die exactly here.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">VIII</span><h2>What else is attached</h2></div>
+  <div class="measure">
+    <p>The vitality model is the spine; a good deal hangs off it. <strong>Weapons</strong> — 51 across eight sheets, each carrying hit-stat, damage-stat, damage types and a Brawn requirement, plus a full nine-weapon firearms table where tech buys reliability and handling but never damage. <strong>Armor</strong> with per-location, per-type reduction and bespoke gap ratings. <strong>Reach</strong>, modelled as measure bands where closing is movement rather than an action, and a spear or polearm can pin the closer with a well-placed thrust.</p>
+    <p><strong>Alchemy</strong> runs off four herb databases — 435 herbs, ~1,700 effects — through a two-stage purification loop that produces a POW value, and that single currency is what every curative, antitoxin and consecrated cure spends. <strong>Magic</strong> comes in three flavours: a runic system with a large rune database, a Cleric who buys miracles with sacrificial Weight rather than spell slots, and Living Magic whose Transference is the one instant permanent Recover in the game — something living dies to pay for it. Two <strong>classes</strong> are drafted (Fighter, Ranger), and <strong>Codex.html</strong> is the live play-side tool, generated from source rather than hand-maintained.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">IX</span><h2>What works</h2></div>
+  <div class="verdicts">
+    <div class="v"><p class="vh"><span class="tag t-good">Core</span>The central conceit is genuinely rare and genuinely good</p><p>Stat-as-durability makes the death spiral structural instead of bolted on. A hurt fighter fights hurt because the arithmetic says so, not because a designer wrote a penalty table. Very few systems commit this hard, and the commitment pays off everywhere downstream.</p></div>
+    <div class="v"><p class="vh"><span class="tag t-good">Fiction</span>Defeat has a dozen faces</p><p>Disarmed, downed, blinded, concussed, bled white — and only one of them is a corpse. This gives a GM a menu that HP simply cannot produce, and it makes capture, mercy and maiming ordinary outcomes rather than special rulings.</p></div>
+    <div class="v"><p class="vh"><span class="tag t-good">Scaling</span>Ratio grading solves cross-tier with no special cases</p><p>One engine yields an escalating same-tier duel, a down-tier beating and an up-tier stalemate. Percent-of-max bleed and maluses mean lethality is tier-independent — nothing goes trivial at high levels and nothing needs a second set of monster rules.</p></div>
+    <div class="v"><p class="vh"><span class="tag t-good">Discipline</span>"Derive, don't duplicate" is actually enforced</p><p>The Appendage Table owns lasting state; rungs own the moment. Cold reuses fire. Poison and necrotic reuse hypothermia. Wound tables are generated from one workbook. This is unusually rigorous for a project this size, and it's why the system can absorb a new element without a rewrite.</p></div>
+    <div class="v"><p class="vh"><span class="tag t-good">Method</span>It is tested, not merely asserted</p><p>A Monte Carlo harness drives real decisions and has caught real problems — a flat escalation curve, a "trap" region that wasn't, a placement option scoring zero because of a missing mechanic. Almost no hobby TTRPG has this, and it shows in how few of the balance claims are hand-waved.</p></div>
+    <div class="v"><p class="vh"><span class="tag t-good">Result</span>Weapon balance reproduces history rather than claiming to</p><p>The slashing greataxe is king of the unarmored duel and near-useless against plate (62% → 15%); blunt and versatile polearms own the armored field (maul 54% → 86%). No weapon is best in every environment. That emerged from the armor model — it wasn't designed in.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">X</span><h2>What doesn't</h2></div>
+  <div class="verdicts">
+    <div class="v"><p class="vh"><span class="tag t-bad">Load</span>The bookkeeping claim is not true in aggregate</p><p>Per wound, this genuinely is lighter than three HP bars. But a character carrying three wounds, an infection Load, a suppressed malus and a poison clock is tracking around fifteen live numbers across six stats with current and maximum values. The system is honest about per-wound cost and quiet about the total.</p></div>
+    <div class="v"><p class="vh"><span class="tag t-bad">Surface</span>Six parallel elemental subsystems is a lot to hold</p><p>Fire, cold, hypothermia, acid, poison and necrotic each have their own clock, stage ladder, interrupt and cure vocabulary. The inheritance discipline makes each one learnable; it does not make the set small. A GM running a mixed encounter may have three different clocks ticking at three different intervals.</p></div>
+    <div class="v"><p class="vh"><span class="tag t-bad">Evidence</span>Almost nothing outside the duel engine is play-tested</p><p>The simulator covers one-on-one physical combat. Infection, gangrene, the three healing verbs, every elemental clock and the Cleric's economy have been reasoned about carefully and run at a table barely or not at all. The healing model in particular is flagged in its own document as new and untested.</p></div>
+    <div class="v"><p class="vh"><span class="tag t-warn">Numbers</span>Architecture is far ahead of tuning</p><p>An unusually large share of concrete values carry an explicit "placeholder, tune-flagged" marker — CON drain rates for every element, neutralize DCs, poison dose stacking, necrotic suppression percentages, the fire and cold drain grids. The shapes are settled and defensible; the magnitudes are largely guesses awaiting contact with play.</p></div>
+    <div class="v"><p class="vh"><span class="tag t-bad">Data</span>The weapon tables are incomplete and internally inconsistent</p><p>Eleven of sixteen piercing rows have no damage at all — including the spear, pike and lance — and all sixteen throwing weapons are blank. Crossbows sit on a wildly different scale from everything else (an arbalest averages 55 against an odachi's 10.5, and cannot roll a non-serious wound against an unarmored human). Large-creature weapons are specified as a rule but no table rows exist.</p></div>
+    <div class="v"><p class="vh"><span class="tag t-warn">Feel</span>The extremes of the armor range are both unsatisfying</p><p>Unarmored duels run three rounds and are brutally swingy — historically defensible, but it means the escalation loop is least visible exactly where new characters start. At the other end, plate duels run thirteen rounds and resolve about a third of the time by bleed-out rather than by a decisive blow: a long exchange of mostly-superficial results.</p></div>
+    <div class="v"><p class="vh"><span class="tag t-warn">Outcomes</span>Limb loss is the modal way fights end</p><p>Across armor tiers, somewhere between half and two-thirds of duels end in a disarm — Brawn to zero or an arm gone. That is a coherent consequence of the arm being both a loss condition and the efficient target, but a campaign in which most fights cost someone an arm may be more maiming than intended.</p></div>
+    <div class="v"><p class="vh"><span class="tag t-warn">Coupling</span>Three of five regions share one denominator</p><p>Chest, abdomen and head all grade against CON, so under random targeting CON absorbs roughly 55% of all structure tolls against 25% for Brawn and 23% for Drive. Torso toughness therefore degrades about twice as fast as either limb, and wounding someone's <em>head</em> makes their <em>chest</em> easier to open. Arguably correct — the torso is the vital mass — but it is an emergent coupling, not a designed one.</p></div>
+    <div class="v"><p class="vh"><span class="tag t-bad">Debt</span>Recent changes left live inconsistencies downstream</p><p>Re-anchoring the severity curve made Vital Gap the strongest non-crit option in the game without it being re-priced, and it overturned three of the six findings the Fighter class was designed around — legs are no longer worthless, the chest is no longer a trap. Both are flagged in the documents; neither is resolved.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">XI</span><h2>Where it actually stands</h2></div>
+  <div class="measure">
+    <p>The honest summary: <strong>this is a system with an exceptionally strong spine, a genuinely disciplined architecture, and a soft middle of unvalidated numbers.</strong></p>
+    <p>The vitality model, the wound engine, the infection engine, the appendage resolution, the NPC tiers and all six elemental systems are <em>built</em> — prose, workbook tabs, and tool support. That is a remarkable amount of coherent design. What has not happened is contact with a table. Every structural decision has been stress-tested by reasoning and, where it touches one-on-one combat, by simulation; almost none of the magnitudes have been tested by play.</p>
+    <p>The most valuable next step is not another subsystem. It is a run of real sessions aimed squarely at the three things the simulator cannot see — <strong>how heavy the bookkeeping actually feels in play, whether the healing verbs read as meaningful choices or as accounting, and whether losing an arm every other fight is the game you want.</strong> Everything else is tuning, and the tuning dials are already labelled.</p>
+  </div>
+</section>
+
+<footer>
+  Sources — Health/Regional_Stat_Vitality_System.md · Weapons/Current/Wound_System_Handoff.md · Health/sim/ · Classes/ · Alchemy/ · Magic/
+</footer>
+
+</div>
+
+</body>
+</html>

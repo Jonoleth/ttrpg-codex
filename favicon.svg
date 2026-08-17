@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="The Regional-Stat System">
+  <rect width="32" height="32" rx="5" fill="#17120f"/>
+  <!-- The six-region figure the system is built on, cut down to blocks that
+       still read at 16px: head, chest, arms, legs. -->
+  <g fill="#e8dfce">
+    <circle cx="16" cy="8" r="3.6"/>
+    <rect x="12.6" y="13" width="6.8" height="8.4" rx="1.4"/>
+    <rect x="6.6" y="13.4" width="4.6" height="2.9" rx="1.45"/>
+    <rect x="20.8" y="13.4" width="4.6" height="2.9" rx="1.45"/>
+    <rect x="12.8" y="22.6" width="2.7" height="6.2" rx="1.35"/>
+    <rect x="16.5" y="22.6" width="2.7" height="6.2" rx="1.35"/>
+  </g>
+  <!-- the blow, landed somewhere -->
+  <circle cx="16" cy="16.6" r="2.1" fill="#a8352b"/>
+</svg>
