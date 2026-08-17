@@ -228,8 +228,10 @@ h4{font-family:'Spline Sans Mono',monospace;font-size:.68rem;letter-spacing:.2em
 .ar-dr{font-family:'Spline Sans Mono',monospace;font-size:.63rem;color:var(--bone-faint)}
 
 /* the strike log */
+/* overflow stays visible so a step's hover panel can hang past the card; the
+   corners the old overflow:hidden was rounding are handled by the two ends. */
 .strike{border:1px solid var(--line);border-left:3px solid var(--line);border-radius:3px;
-  background:var(--ink2);margin-bottom:12px;overflow:hidden}
+  background:var(--ink2);margin-bottom:12px;overflow:visible;position:relative}
 .strike.miss{border-left-color:#4a4038}
 .strike.superficial{border-left-color:#7a8a5f}
 .strike.minor{border-left-color:#b09a4a}
@@ -237,7 +239,7 @@ h4{font-family:'Spline Sans Mono',monospace;font-size:.68rem;letter-spacing:.2em
 .strike.grievous{border-left-color:var(--oxblood)}
 .strike.catastrophic{border-left-color:var(--dire)}
 .strike-h{padding:10px 14px;border-bottom:1px solid var(--line);font-family:'Spectral',serif;
-  font-size:1rem;color:var(--bone);background:var(--panel)}
+  font-size:1rem;color:var(--bone);background:var(--panel);border-radius:2px 2px 0 0}
 .strike-h em{color:var(--gild);font-size:.85rem}
 .stp{display:flex;gap:11px;align-items:baseline;padding:7px 14px;border-bottom:1px solid #241d17;font-size:.88rem}
 .stp i{font-family:'Spline Sans Mono',monospace;font-size:.6rem;color:var(--gild);font-style:normal;
@@ -247,14 +249,50 @@ h4{font-family:'Spline Sans Mono',monospace;font-size:.68rem;letter-spacing:.2em
   color:var(--bone-faint);min-width:150px;flex-shrink:0}
 .stp span{color:var(--bone-dim)}
 .stp em{color:var(--bone-faint);font-size:.82rem}
-.strike-out{padding:12px 14px;background:#17120e}
+.strike-out{padding:12px 14px;background:#17120e;border-radius:0 0 2px 2px}
 .strike-out.miss{color:var(--bone-faint);font-style:italic}
 .strike-out .sev{font-family:'Spline Sans Mono',monospace;font-size:.58rem;letter-spacing:.14em;
   text-transform:uppercase;color:var(--gild);display:block;margin-bottom:4px}
-.strike-out b{font-family:'Spectral',serif;font-size:1.12rem;color:var(--bone)}
+/* direct child only — the wound name. Chips and kv rows below carry their own
+   <b> styling and must not be overridden by it. */
+.strike-out>b{font-family:'Spectral',serif;font-size:1.12rem;color:var(--bone)}
+.strike-out .chips{margin:9px 0 4px}
+.strike-out .kv{border-bottom-color:#241d17}
+.strike-out .kv b{min-width:112px}
 .strike-eff{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
 .tagx{font-family:'Spline Sans Mono',monospace;font-size:.56rem;letter-spacing:.06em;
   border:1px solid var(--line);border-radius:2px;padding:3px 7px;color:var(--bone-faint)}
+
+/* the hit/miss verdict, said plainly on the roll line itself */
+.stp .verdict{font-family:'Spline Sans Mono',monospace;font-size:.58rem;letter-spacing:.12em;
+  text-transform:uppercase;border-radius:2px;padding:3px 8px;margin-left:3px;
+  white-space:nowrap;display:inline-block}
+.stp .verdict.hit{background:var(--oxblood);color:var(--bone)}
+.stp .verdict.crit{background:var(--gild);color:#17120e}
+.stp .verdict.miss{background:#241d17;color:var(--bone-faint);border:1px solid var(--line)}
+
+/* a step that can explain itself. Same behaviour as the ability cards: hover,
+   or focus it from the keyboard. */
+.stp.has-tip{position:relative;cursor:help}
+.stp.has-tip>b::after{content:" ⓘ";color:var(--gild-dim);font-size:.72rem;letter-spacing:0}
+.stp.has-tip:hover,.stp.has-tip:focus-within{background:#1c1611}
+.stp-tip{position:absolute;left:40px;right:12px;top:100%;margin-top:2px;z-index:70;
+  background:#17120e;border:1px solid var(--gild-dim);border-radius:3px;padding:14px 16px;
+  box-shadow:0 26px 60px -18px #000,0 0 0 1px #0008;
+  font-family:'IM Fell English',serif;font-size:.9rem;line-height:1.62;color:var(--bone-dim);
+  opacity:0;visibility:hidden;transform:translateY(-5px);
+  transition:opacity .13s,transform .13s,visibility .13s;max-height:360px;overflow-y:auto}
+.stp.has-tip:hover>.stp-tip,.stp.has-tip:focus-within>.stp-tip{
+  opacity:1;visibility:visible;transform:translateY(0)}
+/* .stp b and .stp em are styled for the step line; undo that inside the panel */
+.stp-tip b{font-family:'Spectral',serif;font-size:.9rem;letter-spacing:0;text-transform:none;
+  color:var(--bone);min-width:0;flex-shrink:1;font-weight:600;display:inline}
+.stp-tip em{font-size:.9rem;color:var(--bone-faint)}
+.stp-tip p{margin:0 0 .62rem}
+.stp-tip p:last-child{margin:0}
+.stp-tip .sum{font-family:'Spline Sans Mono',monospace;font-size:.76rem;color:var(--gild);
+  background:#221a13;border:1px solid var(--line);border-radius:2px;
+  padding:7px 9px;display:block;margin:0 0 .62rem;white-space:pre-wrap;line-height:1.5}
 .tagx.bleed{color:#c9756a;border-color:#5e2620}
 .tagx.bad{color:var(--dire);border-color:var(--dire)}
 
@@ -3407,7 +3445,9 @@ function doStrike(){
   if(!r) return;
   const w=r.weapon;
   const id="s"+(++SPAR.seq);
-  const step=(n,label,detail)=>`<div class="stp"><i>${n}</i><b>${label}</b><span>${detail}</span></div>`;
+  // `tip` is the long explanation; a step that has one is hoverable and focusable.
+  const step=(n,label,detail,tip)=>`<div class="stp${tip?" has-tip":""}"${tip?' tabindex="0"':""}>`+
+    `<i>${n}</i><b>${label}</b><span>${detail}</span>${tip?`<div class="stp-tip">${tip}</div>`:""}</div>`;
   let html=`<div class="strike ${r.hit?(r.band||"hit").toLowerCase():"miss"}" id="strike-${id}">
     <div class="strike-h">${esc(c.name)} strikes the <b>${esc(SPAR.loc)}</b> with ${esc(w.name)}
       ${r.vital?`<em>— aiming for a gap</em>`:""}</div>`;
@@ -3417,7 +3457,10 @@ function doStrike(){
     `d20 <b>${r.d20}</b>${r.nat!==r.d20?` → rerolled ${r.nat}`:""}${r.eff20!==r.nat?` → counts as ${r.eff20}`:""} `+
     `${sgn(Math.round(r.hitMod))} (${statLabel(w.hit)}) `+
     `${sgn(r.skill)} (training)${r.gapPen?` −${r.gapPen} (finding a gap)`:""} = <b>${r.total.toFixed(1)}</b> `+
-    `against ${r.targetAC}${r.crit?" — <b>a clean strike</b>":""}`+
+    `against ${r.targetAC} `+
+    (r.crit?`<span class="verdict crit">Hit — a clean strike</span>`
+     :r.hit?`<span class="verdict hit">Hit</span>`
+           :`<span class="verdict miss">Miss</span>`)+
     (r.notes.length?`<br><em>${r.notes.join("; ")}</em>`:""));
 
   if(!r.hit){
@@ -3427,29 +3470,82 @@ function doStrike(){
   html+=step(3,"Force of the blow",
     `${w.dice[0]}d${w.dice[1]} rolled ${r.rolls.join(" + ")} = ${r.dice}, ${sgn(r.dmgMod)} (${statLabel(w.dmg)}) = <b>${r.force}</b>`);
   const pc=r.piece;
+  const mult=pc?pc[r.type][0]:1, flat=pc?pc[r.type][1]:0;
+  const armTip=r.vital
+    ? `<span class="sum">force ${r.force}  →  ${r.eff.toFixed(1)} arrives (armour skipped)</span>
+       <p>You are not trying to beat the armour here — you are going <b>around</b> it. A gap thrust
+       puts the point into a seam the plates cannot cover: the armpit, the visor, the inside of the
+       elbow. Nothing is multiplied and nothing is subtracted, so the full force of the blow reaches
+       flesh.</p>
+       <p>That is why it is hard to aim (you took a penalty back in step 2) and why only a narrow,
+       stiff point can do it — a sword edge or a hammer head has nothing to put through the gap.</p>`
+    : `<span class="sum">${r.force} × ${mult}${flat?`  −  ${flat}`:""}  =  ${r.eff.toFixed(1)} arrives</span>
+       <p>The blow has been thrown; now it meets whatever is covering that part of the body${
+         pc?` — here, <b>${esc(pc.name)}</b>`:`, which here is <b>bare flesh</b>`}.</p>
+       <p><b>Armour does not take a fixed amount off the top. It multiplies.</b> It scales the whole
+       blow down by a fraction, and the fraction depends on what <em>kind</em> of harm is arriving.
+       This is a <b>${DTYPE[r.type].toLowerCase()}</b> blow, so the fraction is <b>×${mult}</b>.</p>
+       ${pc?`<p>The same piece answers the three kinds very differently — ${esc(pc.name)} takes a cut
+       to ×${pc.S[0]}, a thrust to ×${pc.P[0]} and a crushing blow to ×${pc.B[0]}. That is the whole
+       reason armour is not just one number: plate very nearly erases a sword cut and barely troubles
+       a mace, and a hammer is the honest answer to a man in a harness.</p>`:""}
+       ${flat?`<p>This piece also takes a flat <b>${flat}</b> off whatever survives the multiply —
+       padding soaking up the last of it.</p>`:""}
+       <p>What is left is the only number the next step cares about. Everything the weapon rolled
+       before this point has already done its work.</p>`;
   html+=step(4,"Through the armour",
     r.vital?`The point goes into a gap — armour is bypassed entirely. <b>${r.eff.toFixed(1)}</b> arrives.`
-    :`${DTYPE[r.type]} against ${pc?esc(pc.name):"bare flesh"} — ×${pc?pc[r.type][0]:1}${pc&&pc[r.type][1]?` then −${pc[r.type][1]}`:""} → <b>${r.eff.toFixed(1)}</b> arrives.`);
+    :`${DTYPE[r.type]} against ${pc?esc(pc.name):"bare flesh"} — ×${mult}${flat?` then −${flat}`:""} → <b>${r.eff.toFixed(1)}</b> arrives.`,
+    armTip);
+
+  const ratio=r.tough>0?r.eff/r.tough:99;
+  const sevTip=`<span class="sum">${r.eff.toFixed(1)} ÷ ${r.tough.toFixed(1)} = ${
+      ratio.toFixed(2)}  →  injury roll shifts ${r.sev>=0?"+":""}${Math.round(r.sev)}</span>
+    <p>This is where the game decides <b>how bad it is</b>, and it is a comparison — not a
+    subtraction. Nothing is being taken away from a pool here.</p>
+    <p>The force that got through is measured against how tough that part of the body is
+    <b>right now</b>: its current Structure stat, not its healthy maximum. ${
+      r.vital?"":`Here that is <b>${r.tough.toFixed(1)}</b>.`}</p>
+    <p>What matters is the <b>ratio</b> between the two, not the gap between them. A blow half as
+    strong as the region is tough is an ordinary same-tier hit and shifts nothing. Match the region's
+    toughness and the roll shifts <b>+25</b>. Double it and it shifts <b>+60</b>, the ceiling. Go the
+    other way and it falls away just as fast: a quarter shifts <b>−30</b>, a tenth <b>−60</b>, the
+    floor. In between, the shift slides smoothly.</p>
+    <p><b>This is the escalation ladder, and it is the point of the whole system.</b> As a region is
+    worn down its toughness falls, so the very same blow scores a larger ratio and lands further down
+    the injury table. Halve a region's toughness and wounds land about one band deeper. A fighter
+    does not get slowly whittled away — they get worse, and then they get worse faster.</p>
+    ${r.vital?`<p><em>A gap thrust ignores toughness, so this shift never drops below 0 however
+    outmatched you are, and the injury roll gets a further +20.</em></p>`:""}`;
   html+=step(5,"Compared to the body part",
     `${r.eff.toFixed(1)} against a toughness of <b>${r.tough.toFixed(1)}</b> → the injury roll shifts by <b>${r.sev>=0?"+":""}${Math.round(r.sev)}</b>`+
-    (r.vital?" <em>(a gap thrust ignores toughness, so this never goes below 0, then +20)</em>":""));
+    (r.vital?" <em>(a gap thrust ignores toughness, so this never goes below 0, then +20)</em>":""),
+    sevTip);
   html+=step(6,"The injury",
     `d100 <b>${r.d100}</b> ${r.sev>=0?"+":""}${Math.round(r.sev)}`+
     (r.crit?" +25 (clean strike)":"")+(r.vital?" +20 (gap)":"")+
     ` = <b>${Math.round(r.woundTotal)}</b>`+(r.seam?" <em>— a freak seam; never worse than Serious</em>":""));
 
-  const row=r.row;
+  // The wound reads exactly as it does on the Wounds tab — same chips, same rows,
+  // same wording — so the two places never describe one wound two ways.
+  const row=r.row, wtot=Math.round(r.woundTotal);
   html+=`<div class="strike-out ${(r.band||"").toLowerCase()}">
     <span class="sev">${esc(r.band)}</span>
     <b>${row?esc(row.wound):"—"}</b>
-    <div class="strike-eff">
-      ${row&&row.bleed?`<span class="tagx bleed">Bleeding — ${esc(row.bleed)}</span>`:""}
-      ${row&&row.toll?`<span class="tagx">Toughness −${Math.round(row.toll*100)}%</span>`:""}
-      ${row&&row.exh?`<span class="tagx">+${row.exh} exhaustion</span>`:""}
-      ${row&&row.limb?`<span class="tagx bad">Limb disabled or lost</span>`:""}
-      ${row&&row.out?`<span class="tagx bad">Dropped — out of the fight</span>`:""}
-      ${row&&row.lasting?`<span class="tagx">${esc(row.lasting)}</span>`:""}
+    <div class="chips">
+      <span class="chip"><b>${esc(r.band)}</b></span>
+      ${row?`<span class="chip">roll ${wtot} → row ${row.n} (${row.lo}–${row.hi})</span>`
+           :`<span class="chip">roll ${wtot}</span>`}
+      ${row&&row.bleed?`<span class="chip hot">bleed · ${esc(row.bleed)}</span>`:""}
+      ${row&&row.exh?`<span class="chip hot">exhaustion +${row.exh}</span>`:""}
+      ${row&&row.limb?`<span class="chip hot">limb disabled</span>`:""}
+      ${row&&row.out?`<span class="chip hot">⚑ incapacitated</span>`:""}
     </div>
+    ${row&&row.bleedRaw?`<div class="kv"><b>Bleed</b><span>${esc(row.bleedRaw)}${bleedNote(row.bleed)}</span></div>`:""}
+    ${row&&row.lasting?`<div class="kv"><b>Lasting</b><span>${esc(row.lasting)}</span></div>`:""}
+    ${row&&(row.maluses||[]).length?`<div class="kv"><b>Maluses</b><span>${
+      row.maluses.map(m=>esc(malusText(m))).join(" · ")} — applied automatically, as %-of-max</span></div>`:""}
+    ${row&&row.toll?`<div class="kv"><b>Toughness toll</b><span>−${Math.round(row.toll*100)}% of the region's max</span></div>`:""}
     <div class="applybar"><button class="btn go" data-apply="${id}">Apply this wound to the dummy</button>
       <span>nothing has happened to it yet</span></div>
   </div></div>`;
