@@ -8,12 +8,53 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,sans-serif;font-size:14px;background:#F5F5F0;color:#1a1a1a;min-height:100vh}
-.app{display:grid;grid-template-columns:320px 1fr;grid-template-rows:auto 1fr;min-height:100vh}
+/* The library column scales with the space it is given instead of sitting at a
+   fixed 320px, and both panes take their height from the grid row rather than
+   from 100vh -- the page is also served inside an iframe on the Codex's Alchemy
+   tab, where a viewport-height calculation measures the wrong box. */
+.app{display:grid;grid-template-columns:clamp(208px,24vw,340px) minmax(0,1fr);
+  grid-template-rows:auto minmax(0,1fr);
+  /* a bounded height, so the 1fr row is finite and the two panes scroll inside
+     themselves instead of stretching the page to the length of 435 herbs.
+     dvh where it is understood, so mobile browser chrome does not crop it. */
+  height:100vh;height:100dvh}
 .topbar{grid-column:1/-1;background:#2D4A7A;color:#fff;padding:10px 20px;display:flex;align-items:center;gap:16px}
 .topbar h1{font-size:18px;font-weight:500}
 .topbar .sub{font-size:13px;opacity:.7;margin-left:auto}
-.sidebar{background:#fff;border-right:1px solid #e0e0e0;padding:12px;overflow-y:auto;height:calc(100vh - 45px)}
-.main{padding:16px;overflow-y:auto;height:calc(100vh - 45px)}
+.sidebar{background:#fff;border-right:1px solid #e0e0e0;padding:12px;min-height:0;
+  display:flex;flex-direction:column;gap:0;overflow:hidden}
+.main{padding:16px;overflow-y:auto;min-height:0}
+
+/* the collapsible herb library */
+.lib-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex:0 0 auto}
+.lib-toggle{flex:1;display:flex;align-items:center;gap:7px;background:none;border:none;
+  padding:4px 2px;cursor:pointer;font:inherit;font-size:13px;font-weight:600;color:#2D4A7A;
+  text-align:left;border-radius:6px}
+.lib-toggle:hover{background:#f0f3f9}
+.lib-toggle .chev{display:inline-block;transition:transform .15s;font-size:11px}
+.lib-count{font-size:11px;color:#888;flex:0 0 auto;white-space:nowrap}
+.lib-body{display:flex;flex-direction:column;min-height:0;flex:1 1 auto}
+#herb-list{flex:1 1 auto;min-height:0;overflow-y:auto}
+.app.lib-collapsed{grid-template-columns:auto minmax(0,1fr)}
+.app.lib-collapsed .lib-body{display:none}
+.app.lib-collapsed .sidebar{overflow:visible}
+.app.lib-collapsed .lib-toggle .chev{transform:rotate(-90deg)}
+.app.lib-collapsed .lib-head{margin-bottom:0}
+.app.lib-collapsed .lib-count{display:none}   /* keep the folded rail narrow */
+
+/* narrow screens: one column, the library a drawer above the bench */
+@media (max-width:760px){
+  /* stacked, and the page scrolls as one -- the bench is taller than a phone
+     and trapping it in its own scroller is worse than letting the page move */
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);
+    height:auto;min-height:100vh;min-height:100dvh}
+  .sidebar{border-right:none;border-bottom:1px solid #e0e0e0;max-height:56vh}
+  .app.lib-collapsed{grid-template-columns:minmax(0,1fr)}
+  .app.lib-collapsed .sidebar{max-height:none}
+  .topbar{padding:9px 12px;gap:10px;flex-wrap:wrap}
+  .topbar .sub{font-size:11px;margin-left:0;flex-basis:100%}
+  .main{padding:12px}
+}
 .panel{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:12px;margin-bottom:12px}
 .panel-title{font-size:13px;font-weight:600;color:#555;margin-bottom:10px;display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1px solid #f0f0f0}
 .badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600}
@@ -87,7 +128,7 @@ input[type=checkbox]{width:14px;height:14px;cursor:pointer}
 .r-european{background:#5DAA75}
 .r-north-american{background:#AA7A4A}
 .r-fantasy{background:#7A5DAA}
-#herb-list{max-height:calc(100vh - 210px);overflow-y:auto}
+/* height now comes from the flex column above, not from the viewport */
 </style>
 </head>
 <body>
@@ -99,15 +140,23 @@ input[type=checkbox]{width:14px;height:14px;cursor:pointer}
   </div>
 
   <div class="sidebar">
-    <input class="herb-search" type="text" id="herb-search" placeholder="Search herbs or effects...">
-    <div class="filter-bar">
-      <button class="filter-btn active" data-region="all">All</button>
-      <button class="filter-btn" data-region="Asian"><span class="region-dot r-asian"></span>Asian</button>
-      <button class="filter-btn" data-region="European"><span class="region-dot r-european"></span>European</button>
-      <button class="filter-btn" data-region="North American"><span class="region-dot r-north-american"></span>N. American</button>
-      <button class="filter-btn" data-region="Fantasy"><span class="region-dot r-fantasy"></span>Fantasy</button>
+    <div class="lib-head">
+      <button class="lib-toggle" id="lib-toggle" aria-expanded="true" aria-controls="lib-body">
+        <span class="chev">&#9662;</span>Herb library
+      </button>
+      <span class="lib-count" id="lib-count"></span>
     </div>
-    <div id="herb-list"></div>
+    <div class="lib-body" id="lib-body">
+      <input class="herb-search" type="text" id="herb-search" placeholder="Search herbs or effects...">
+      <div class="filter-bar">
+        <button class="filter-btn active" data-region="all">All</button>
+        <button class="filter-btn" data-region="Asian"><span class="region-dot r-asian"></span>Asian</button>
+        <button class="filter-btn" data-region="European"><span class="region-dot r-european"></span>European</button>
+        <button class="filter-btn" data-region="North American"><span class="region-dot r-north-american"></span>N. American</button>
+        <button class="filter-btn" data-region="Fantasy"><span class="region-dot r-fantasy"></span>Fantasy</button>
+      </div>
+      <div id="herb-list"></div>
+    </div>
   </div>
 
   <div class="main">
@@ -123,7 +172,7 @@ input[type=checkbox]{width:14px;height:14px;cursor:pointer}
         <div class="panel-title"><span class="badge s1-badge">Stage 1</span> Phase Alembic &mdash; Components</div>
         <div class="slot-bar"><div class="slot-fill" id="slot-fill"></div></div>
         <div class="muted" id="slot-counter" style="margin-bottom:8px"></div>
-        <div id="s1-components"><div class="empty-state">Select herbs from the library on the left.</div></div>
+        <div id="s1-components"><div class="empty-state">Select herbs from the library.</div></div>
       </div>
       <div class="panel">
         <div class="panel-title"><span class="badge eq-badge">Modulator</span> Phase Power Modulator</div>
@@ -408,6 +457,10 @@ function renderHerbList(){
     }
     return true;
   });
+  var lc=document.getElementById('lib-count');
+  if(lc) lc.textContent=filtered.length===HERB_KEYS.length
+    ? filtered.length+' herbs'
+    : filtered.length+' of '+HERB_KEYS.length;
   if(!filtered.length){el.innerHTML='<div class="empty-state">No herbs match your search.</div>';return;}
   var html='';
   var showPhases=q.length>0;
@@ -473,7 +526,7 @@ function renderS1Components(){
   var s1=calcS1();
   var byComp={};
   for(var i=0;i<s1.length;i++){var e=s1[i];if(!byComp[e.compIdx])byComp[e.compIdx]=[];byComp[e.compIdx].push(e);}
-  if(!state.s1.length){document.getElementById('s1-components').innerHTML='<div class="empty-state">Select herbs from the library on the left.</div>';return;}
+  if(!state.s1.length){document.getElementById('s1-components').innerHTML='<div class="empty-state">Select herbs from the library.</div>';return;}
   var html='';
   var cis=Object.keys(byComp);
   for(var ci=0;ci<cis.length;ci++){
@@ -1181,6 +1234,34 @@ function renderPhaseRef(){
   });
   document.getElementById('phase-ref').innerHTML=html;
 }
+
+/* The library folds away so the bench can have the whole width. On a narrow
+   screen it starts folded, because otherwise the list is all you can see. */
+var appEl=document.querySelector('.app'), libBtn=document.getElementById('lib-toggle');
+var libTouched=false;
+var LIB_NARROW=760;                     // keep in step with the @media breakpoint
+function setLibrary(open){
+  appEl.classList.toggle('lib-collapsed',!open);
+  libBtn.setAttribute('aria-expanded',open?'true':'false');
+}
+libBtn.addEventListener('click',function(){
+  libTouched=true;                      // from here on it is the reader's choice
+  setLibrary(appEl.classList.contains('lib-collapsed'));
+});
+/* This page is also loaded into a srcdoc iframe on the Codex's Alchemy tab, and
+   a srcdoc frame reports a zero-width viewport while it is still being laid
+   out -- reading the width once at parse time folded the library on a full
+   desktop. Take the first usable measurement instead, and keep following the
+   viewport until the reader takes over. */
+function autoLibrary(){
+  if(libTouched) return;
+  var w=window.innerWidth||document.documentElement.clientWidth||0;
+  if(!w) return;
+  setLibrary(w>LIB_NARROW);
+}
+autoLibrary();
+requestAnimationFrame(function(){requestAnimationFrame(autoLibrary);});
+window.addEventListener('resize',autoLibrary);
 
 document.getElementById('herb-search').addEventListener('input',function(){state.search=this.value;renderHerbList();});
 document.querySelectorAll('.filter-btn').forEach(function(btn){
