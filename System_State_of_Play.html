@@ -224,31 +224,60 @@
 <section>
   <div class="sec-head"><span class="sec-num">III</span><h2>Resolving one hit</h2></div>
   <div class="measure">
-    <p>There is no proc gate and no damage number. <strong>Every landed hit is one graded wound roll</strong> against the struck region. The question is never whether you're hurt, only how badly.</p>
+    <p>There is no proc gate, no damage number, and no wound die. <strong>Every landed hit is one graded comparison</strong> against the struck region, and that comparison <em>is</em> the wound. The question is never whether you're hurt, only how badly.</p>
   </div>
   <ol class="pipe">
     <li><span class="step">1 · To hit</span>The weapon's hit-stat plus Skill against the region's AC — <code>region base + Faculty mod + armor</code>. Heavy plate carries a <em>negative</em> AC bonus (you can't dodge in it) against enormous damage reduction.</li>
-    <li><span class="step">2 · Blow power</span>Weapon dice plus the damage-stat modifier. Hit-stat and damage-stat are decoupled per weapon — a poleaxe is <em>placed</em> with Deftness but <em>driven</em> by Brawn; a spear is aimed by hand and driven from the legs.<span class="formula">BlowPower = weapon dice + mod(damage-stat)</span></li>
+    <li><span class="step">2 · Blow power</span>Weapon dice <em>multiplied</em> by the damage stat — never added. Multiplying keeps the dice worth the same share of the result at every tier, so two gods with mortal swords have the fight two trained humans have. Hit-stat and damage-stat are decoupled per weapon — a poleaxe is <em>placed</em> with Deftness but <em>driven</em> by Brawn; a spear is aimed by hand and driven from the legs.<span class="formula">BlowPower = weapon dice × (damage stat ÷ 10)</span></li>
     <li><span class="step">3 · Armor</span>Armor does not subtract. It <em>multiplies</em>, by damage type: slashing ×1½ bare and ×⅛ against plate; piercing ×1 → ×½; blunt ×1 throughout. A versatile weapon picks whichever type is best against this target — which also selects which wound table it reads.<span class="formula">EffectiveBlowPower = BlowPower × penetration(type vs armor)</span></li>
-    <li><span class="step">4 · The ratio</span>Compare the blow to what it hit — the region's <em>current</em> Structure stat. This is the whole severity engine.<span class="formula">ratio = EffectiveBlowPower ÷ RegionToughness(current)</span></li>
-    <li><span class="step">5 · The wound roll</span>One d100, shifted by the ratio, read on the struck region's ladder. The result <em>is</em> the effect — a stat reduction, a bleed band, exhaustion, maybe incapacitation.<span class="formula">wound roll = d100 + 25·log₂(ratio) + crit</span></li>
+    <li><span class="step">4 · The wound</span>Divide what arrived by the region's <strong>Wound Step</strong> — a fifth of its <em>current</em> Structure stat — and round up. That single division is the whole engine: a blow level with the region reads wound 5, twice as strong reads 10, four times reads 20. The result <em>is</em> the effect — a stat reduction, a bleed band, exhaustion, maybe incapacitation.<span class="formula">Wound Step = toughness(current) ÷ 5&nbsp;&nbsp;·&nbsp;&nbsp;wound = what arrives ÷ Wound Step, 1–20</span></li>
   </ol>
   <div class="measure">
     <p>Damage type selects both the armor column and the wound table, so a thrust and a chop to the same chest read genuinely different injuries — the piercing lung-punch, the slashing artery, the blunt fractured ribs. Slashing and piercing chest rungs bleed on 19 of 20 rows; blunt on only 7. That single fact is what balances blunt's armor-ignoring penetration: the maul batters and exhausts, it does not open you up.</p>
+  </div>
+
+  <div class="measure">
+    <h3>Three ways to bend it</h3>
+    <p>Only three things change that division, and the design turns on their being different <em>shapes</em> rather than three sizes of the same bonus. An earlier draft gave a critical hit and a Punishing Strike the same flat +5 wounds, which made the choice between them no choice at all — and a flat bonus added at the end pays most exactly where it is least deserved, so a dagger crit through a fluted cuirass read as a real injury.</p>
+  </div>
+  <div class="scroller">
+  <table>
+    <thead><tr><th>Edge</th><th>Costs</th><th>What it does</th><th>Armor still applies?</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Clean strike</td><td>nothing — luck</td><td><strong>×2 force</strong>, and never less than one wound worse than the same blow without it</td><td>yes</td></tr>
+      <tr><td class="k">Punishing Strike</td><td>advantage</td><td><strong>×1.5 force</strong>, multiplied before armor</td><td>yes</td></tr>
+      <tr><td class="k">Gap thrust</td><td>your whole action, plus accuracy</td><td>multiplies nothing — a <strong>flat wound of 4 + the armor's Gap Rating</strong></td><td><strong>no — ignored</strong></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="measure">
+    <p>The clean strike's floor is the only thing in the whole chain that can beat a hard ceiling: doubling nothing is still nothing, so without it a natural 20 through plate would land the same scratch as a bad swing. Everywhere else, if the numbers say you cannot hurt them, you cannot hurt them.</p>
+    <p>The gap thrust is the odd one, and deliberately so. It asks nothing about how hard you hit — no dice are rolled, no damage stat is read — because a rondel driven into a visor slit does not kill a man by being heavy. <strong>A giant and a child get the identical result from it.</strong> The armor's <em>Gap Rating</em> does two jobs at once: it is the penalty to find the seam <em>and</em> it is the wound found, so the harder a seam is to find, the more it is worth finding.</p>
+  </div>
+  <div class="ramp">
+    <div class="band"><span class="bn">Bare flesh</span><span class="br">Gap 0</span><span class="bt">wound 4</span><span class="bl">no armor to go around — worse than simply stabbing them</span></div>
+    <div class="band"><span class="bn">Padded jack</span><span class="br">Gap 1</span><span class="bt">wound 5</span><span class="bl">gaps everywhere, so finding one means little</span></div>
+    <div class="band"><span class="bn">Mail</span><span class="br">Gap 4</span><span class="bt">wound 8</span><span class="bl">a deep penetration into the chest wall</span></div>
+    <div class="band"><span class="bn">Breastplate</span><span class="br">Gap 7</span><span class="bt">wound 11</span><span class="bl">driven to the bone</span></div>
+    <div class="band"><span class="bn">Full harness</span><span class="br">Gap 8</span><span class="bt">wound 12</span><span class="bl">the throat above the gorget — a nicked carotid</span></div>
+  </div>
+  <p class="ramp-cap">A gap thrust's flat wound, set by what it went around <span class="ref">§13.7</span></p>
+  <div class="measure">
+    <p>That is the whole regulator, and no separate tuning knob is needed. Against a man in a full harness a gap thrust is the only thing that works; against anyone you can actually reach it is a waste of an action, and a fighter with three attacks is nearly always better off swinging three times. It is the outmatched fighter's tool and the master's mistake.</p>
   </div>
 </section>
 
 <section>
   <div class="sec-head"><span class="sec-num">IV</span><h2>The ladder and the spiral</h2></div>
   <div class="measure">
-    <p>The wound roll lands on a five-band ladder, 20 rungs per band, 300 rungs across 15 tables. Every wound also takes a <strong>structure toll</strong> — a percentage of the struck region's maximum, off the very stat that graded it.</p>
+    <p>The wound lands on a twenty-rung ladder read in five bands of four, 300 rungs across 15 tables — one for every damage type against every region. Every wound also takes a <strong>structure toll</strong> — a percentage of the struck region's maximum, off the very stat that graded it.</p>
   </div>
   <div class="ramp">
-    <div class="band"><span class="bn">Superficial</span><span class="br">01–20</span><span class="bt">−4%</span><span class="bl">shock, blood, guard dropping</span></div>
-    <div class="band"><span class="bn">Minor</span><span class="br">21–40</span><span class="bt">−8%</span><span class="bl">a real injury working against you</span></div>
-    <div class="band"><span class="bn">Serious</span><span class="br">41–60</span><span class="bt">−15%</span><span class="bl">the region is compromised</span></div>
-    <div class="band"><span class="bn">Grievous</span><span class="br">61–80</span><span class="bt">−25%</span><span class="bl">the region is failing</span></div>
-    <div class="band"><span class="bn">Catastrophic</span><span class="br">81–100</span><span class="bt">−40%</span><span class="bl">destroyed as a functioning thing</span></div>
+    <div class="band"><span class="bn">Superficial</span><span class="br">1–4</span><span class="bt">−4%</span><span class="bl">shock, blood, guard dropping</span></div>
+    <div class="band"><span class="bn">Minor</span><span class="br">5–8</span><span class="bt">−8%</span><span class="bl">a real injury working against you</span></div>
+    <div class="band"><span class="bn">Serious</span><span class="br">9–12</span><span class="bt">−15%</span><span class="bl">the region is compromised</span></div>
+    <div class="band"><span class="bn">Grievous</span><span class="br">13–16</span><span class="bt">−25%</span><span class="bl">the region is failing</span></div>
+    <div class="band"><span class="bn">Catastrophic</span><span class="br">17–20</span><span class="bt">−40%</span><span class="bl">destroyed as a functioning thing</span></div>
   </div>
   <p class="ramp-cap">Structure toll by band — the cut to the struck region's own Structure stat <span class="ref">§13.9</span></p>
   <div class="measure">
@@ -256,25 +285,25 @@
   </div>
   <div class="note calm">
     <span class="nl">The rule</span>
-    <p><strong>Every halving of a region's toughness makes wounds there land one band deeper.</strong> A fresh same-tier exchange sits at ratio ~0.5 → <code>−25</code>, so fights open on scratches. Grind the region to half and the same swing reads Serious; to a quarter and it reads Grievous.</p>
+    <p><strong>Halve a region's toughness and you halve its Wound Step, so the very same blow divides into twice the wound.</strong> A fresh same-tier exchange reads wound 3 or so, which is why fights open on scratches. Grind the region to half and that swing reads 6; to a quarter and it reads 12 — the same arm, the same sword, a Serious injury.</p>
   </div>
   <div class="measure">
-    <p>Measured over 3,000 duels between evenly matched mythic-tier combatants, that produces a genuine arc rather than a flat distribution:</p>
+    <p>Measured over thousands of duels between evenly matched fighters — longsword, mail, all stats 20 — that produces a genuine arc rather than a flat distribution. A duel opens on scratches and ends in earnest:</p>
   </div>
   <div class="scroller">
   <table>
-    <thead><tr><th>Round</th><th class="num">Mean severity mod</th><th class="num">Struck region, %-of-max</th><th class="num">Superficial</th><th class="num">Catastrophic</th></tr></thead>
+    <thead><tr><th>Round</th><th class="num">Mean wound</th><th class="num">Struck region, %-of-max</th><th class="num">Superficial</th><th class="num">Serious or worse</th></tr></thead>
     <tbody>
-      <tr><td class="k">1</td><td class="num">−25.4</td><td class="num">89%</td><td class="num">44.1%</td><td class="num">1.7%</td></tr>
-      <tr><td class="k">3</td><td class="num">−23.0</td><td class="num">82%</td><td class="num">42.6%</td><td class="num">2.6%</td></tr>
-      <tr><td class="k">5</td><td class="num">−20.6</td><td class="num">76%</td><td class="num">38.5%</td><td class="num">5.4%</td></tr>
-      <tr><td class="k">6+</td><td class="num">−13.3</td><td class="num">61%</td><td class="num">32.3%</td><td class="num"><strong>11.1%</strong></td></tr>
+      <tr><td class="k">1</td><td class="num">3.1</td><td class="num">95%</td><td class="num">79.9%</td><td class="num">1.5%</td></tr>
+      <tr><td class="k">3</td><td class="num">3.3</td><td class="num">89%</td><td class="num">76.5%</td><td class="num">1.2%</td></tr>
+      <tr><td class="k">5</td><td class="num">3.5</td><td class="num">82%</td><td class="num">69.9%</td><td class="num">2.3%</td></tr>
+      <tr><td class="k">6+</td><td class="num">5.7</td><td class="num">52%</td><td class="num">46.5%</td><td class="num"><strong>17.0%</strong></td></tr>
     </tbody>
   </table>
   </div>
   <div class="measure">
-    <p>Killing blows rise <strong>6.5×</strong> across a duel because the region they're rolled against has lost 39% of itself. Bleed and lasting maluses are likewise percentages of maximum, so they're tier-independent by construction: <strong>a peasant and a titan bleed out in the same twenty minutes</strong> — an artery is an artery.</p>
-    <p>The same curve handles tier gaps without a special rule. A mortal swinging at a demigod sits at ratio ~0.09, floors at <code>−60</code>, and can only scratch — barring a natural 96+ or a called shot to the eye. A god swinging down at a peasant reaches <code>+58</code> and one-shots.</p>
+    <p>Serious-or-worse injuries rise <strong>11×</strong> across a duel because the region they are graded against has lost half of itself. Bleed and lasting maluses are likewise percentages of maximum, so they are tier-independent by construction: <strong>a peasant and a titan bleed out in the same twenty minutes</strong> — an artery is an artery.</p>
+    <p>The same single division handles tier gaps without a special rule. A peasant with a longsword swings 13 points of force at a god whose torso is 200: wound 1, and no roll of the die changes it. The god swings back with 880 and reads wound 20. What rescues the mortal is not luck but a declared act — the gap thrust, below.</p>
   </div>
 </section>
 
