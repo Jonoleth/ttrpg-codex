@@ -219,7 +219,7 @@ function renderMain(){
       <span><b>Attribute Damage</b> = does NOT scale; CON to 0 = death</span>
       <span><b>Med. DC</b> = Medicine check to stabilize</span>
     </div>
-    <div class="foot">Wound rule: every landed hit wounds — the d100 roll is graded by the blow-to-toughness ratio. Crit and Punishing Strike add +25; Vital Gap adds +20 and bypasses region toughness. Serious+ is a roll of 41 or better. (This page predates the change and its ladders read at d20 resolution; the live tool is Codex.html.) Superseded trigger text: a hit that drops the target to 0 RHP. Thresholds use MAX Real HP &mdash; magical healing does not make you wound-resistant.</div>`;
+    <div class="foot"><b>This page is the wound <i>content</i>, not the live rules.</b> Its ladders read at d20 resolution and the live tool is <code>Codex.html</code>. Current rule: every landed hit wounds, and the wound is a comparison rather than a roll &mdash; the force of the blow divided by the region&rsquo;s Wound Step (its toughness &divide; 5), read 1&ndash;20. Serious+ is wound 9 or worse. A crit doubles the force before armour and can never read less than one wound worse than the same blow uncritted; a Punishing Strike multiplies it by 1.5; a gap thrust multiplies nothing and reads a flat 4 + the armour&rsquo;s Gap Rating + the weapon&rsquo;s Gap Bite. Retired and kept here only to explain old text: the d100 wound roll, the +25/+20 flat bonuses, the &ldquo;drops the target to 0 RHP&rdquo; trigger, and Real HP thresholds.</div>`;
   main.innerHTML = html;
 }
 </script>
