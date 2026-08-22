@@ -386,6 +386,46 @@ h4{font-family:'Spline Sans Mono',monospace;font-size:.68rem;letter-spacing:.2em
   color:var(--bone-faint);margin-left:10px;text-transform:uppercase}
 
 .blk{margin:16px 0;padding:12px 14px;background:var(--ink2);border-left:2px solid var(--gild-dim);border-radius:0 2px 2px 0}
+/* Reference tab: a contents list, wide tables that scroll rather than squash the
+   page, and worked examples laid out as a run of labelled arithmetic lines. */
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tscroll table.t{min-width:640px}
+.toc{columns:2;column-gap:26px}
+@media(max-width:720px){.toc{columns:1}}
+.toc a{display:block;padding:5px 0;color:var(--bone-dim);text-decoration:none;font-size:.9rem;
+  border-bottom:1px solid #241d17;break-inside:avoid}
+.toc a:hover{color:var(--gild)}
+.toc a i{font-family:'Spline Sans Mono',monospace;font-style:normal;color:var(--bone-faint);
+  font-size:.7rem;margin-right:9px}
+.wex{margin:18px 0;padding:14px 16px;background:var(--ink2);border:1px solid var(--line);
+  border-left:3px solid var(--gild-dim);border-radius:0 3px 3px 0}
+.wex>h5{font-family:'IM Fell English SC',serif;font-size:1.02rem;color:var(--bone);margin:0 0 4px;letter-spacing:.01em}
+.wex>.setup{font-style:italic;color:var(--bone-faint);font-size:.88rem;margin:0 0 12px}
+.wex .line{display:grid;grid-template-columns:minmax(96px,124px) 1fr;gap:12px;padding:6px 0;
+  border-bottom:1px solid #241d17;font-size:.9rem}
+.wex .line:last-of-type{border-bottom:none}
+.wex .line>b{font-family:'Spline Sans Mono',monospace;font-size:.62rem;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--bone-faint);padding-top:3px}
+/* Not scoped to .wex: the gap-thrust summary uses it too. pre-wrap so a formula
+   written across two lines in the source arrives at the reader across two lines. */
+.math{font-family:'Spline Sans Mono',monospace;font-size:.78rem;color:var(--gild);
+  background:#17120e;border-radius:2px;padding:7px 10px;margin:4px 0;display:block;
+  overflow-x:auto;white-space:pre-wrap;line-height:1.5}
+.wex .verdict-row{margin-top:12px;padding-top:11px;border-top:1px solid var(--line)}
+@media(max-width:560px){.wex .line{grid-template-columns:1fr;gap:2px}}
+.armlegend{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:12px 0}
+.armlegend div{background:var(--ink2);border-left:2px solid var(--gild-dim);padding:9px 11px;border-radius:0 2px 2px 0}
+/* only the card's own label is a block; a <b> used for emphasis inside the
+   sentence must stay inline or it chops the sentence in half. */
+.armlegend>div>b{display:block;font-family:'Spline Sans Mono',monospace;font-size:.6rem;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--gild);margin-bottom:4px}
+.armlegend span b{color:var(--bone)}
+.armlegend code{font-family:'Spline Sans Mono',monospace;font-size:.78rem;color:var(--gild)}
+.armlegend span{font-size:.85rem;color:var(--bone-dim)}
+.blkh{font-family:'Spline Sans Mono',monospace;font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--gild);margin:16px 0 6px;font-weight:600}
+.card>.blkh:first-of-type{margin-top:0}
+.grid2>div>.blkh{margin-top:0}
 .blk h5{font-family:'Spline Sans Mono',monospace;font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;
   color:var(--gild);margin:0 0 7px;font-weight:500}
 .blk p{margin:0 0 8px;font-size:.94rem}
@@ -2826,106 +2866,258 @@ function wireDetail(){
 }
 
 /* ===================== reference ===================== */
+/* Which body part the armour reference is showing. The reference tab is
+   otherwise stateless; this is the one control on it. */
+let REF={armLoc:"chest"};
+
 function renderReference(){
   const R=DATA.ref;
   const tbl=(head,rows)=>`<table class="t"><thead><tr>${head.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead>
     <tbody>${rows.map(r=>`<tr>${r.map(cell=>`<td>${esc(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  const wide=t=>`<div class="tscroll">${t}</div>`;
 
-  $("#p-reference").innerHTML=`
-    <div class="card"><h3>The stat curve</h3>
+  /* ---------- armour: every number on a piece, and what it means ---------- */
+  const pieces=(DATA.armor||{})[REF.armLoc]||[];
+  const dr=pair=>`×${pair[0]}${pair[1]?` −${pair[1]}`:""}`;
+  const armourSection=`
+    <p class="note">Armour does not take a fixed amount off a blow. <b>It multiplies</b>, and the
+    fraction depends on what <em>kind</em> of harm is arriving — which is why plate very nearly erases
+    a sword cut and barely troubles a mace. Every piece carries the same six numbers.</p>
+    <div class="armlegend">
+      <div><b>AC</b><span>Added to the target number an attacker must reach. <b>Heavy plate is
+        negative</b> — you cannot dodge in a harness, so it makes you <em>easier</em> to hit and much
+        harder to hurt.</span></div>
+      <div><b>Cut · Thrust · Crush</b><span>What survives this piece, by damage type, as
+        <b>×fraction</b> and then <b>−flat</b>. <code>×0.125 −2</code> means an eighth of the blow
+        gets through and then 2 more is subtracted from what is left.</span></div>
+      <div><b>Gap Rating</b><span>How hard the piece is to find a seam in, 0–8. It is
+        <b>subtracted from a gap thrust's attack roll</b> — and it is also what that seam is worth.</span></div>
+      <div><b>Seam worth</b><span>The flat wound a gap thrust inflicts here: <b>4 + Gap Rating</b>,
+        then shifted by the weapon's Gap Bite. Not shown on the sheet — derived from the Gap Rating.</span></div>
+      <div><b>Versatile weapons</b><span>A weapon with two damage types uses whichever one this
+        piece stops least — and that choice also decides which wound ladder the injury is read on.</span></div>
+      <div><b>Bare flesh</b><span>Not neutral: unarmoured takes cuts at <b>×1.5</b>, because cloth
+        parts for an edge. Thrusts and crushing blows pass at <b>×1</b>.</span></div>
+    </div>
+    <div class="srcbar">${LOCS.map(([k,l])=>
+      `<button class="srcbtn${REF.armLoc===k?" sel":""}" data-armloc="${k}">${esc(l)}</button>`).join("")}</div>
+    ${wide(tbl(["Piece","Tier","AC","Cut","Thrust","Crush","Gap","Seam worth","Traits"],
+      pieces.map(p=>[p.name,p.tier,sgn(p.ac),dr(p.S),dr(p.P),dr(p.B),p.gap,
+                     "wound "+Math.min(20,4+p.gap),p.traits||"—"])))}
+    <p class="note">Read one row: a <b>Fluted Plate Cuirass</b> is <b>AC −1</b> (easier to hit),
+    cuts to <b>×0.125 −2</b> (a sword does essentially nothing), thrusts to <b>×0.5 −2</b> (a point
+    does half), crushes at <b>×1</b> (a hammer is untroubled by it) and has <b>Gap 8</b> — the hardest
+    armour in the game to find a seam in, and therefore the most rewarding.</p>`;
+
+  /* ---------- worked examples: the full chain, real numbers, nothing hidden ---------- */
+  const line=(k,v)=>`<div class="line"><b>${k}</b><span>${v}</span></div>`;
+  const wex=(title,setup,body)=>`<div class="wex"><h5>${title}</h5><p class="setup">${setup}</p>${body}</div>`;
+  const WHO=`Attacker: <b>Deftness 20 (+5)</b>, <b>Brawn 20 (+5)</b>, <b>Skill Rank 5</b>.
+             Defender: <b>Agility 20 (+5)</b>, <b>CON 20</b>.`;
+  const workedSection=`
+    <p class="note">${WHO} Every number below comes from the same tables the sparring tab rolls
+    against, so you can reproduce any of them by equipping the weapon and pressing Strike.</p>
+
+    ${wex("1 · A stiletto into a great helm",
+      "A knight is down. You draw a dagger and go for the visor.",
+      line("Declare","Stiletto is a bodkin point, so a gap thrust is legal. It costs your <b>whole action</b>, not one swing.")+
+      line("Target number",`Head base AC <b>14</b> + his Agility <b>+5</b> = <b>19</b>.
+        The great helm's own <b>AC −4 is ignored</b> — going around the armour is the whole manoeuvre.`)+
+      line("Your roll",`<span class="math">d20 +5 (Deftness) +5 (Skill Rank) −8 (great helm Gap) −0 (stiletto) = d20 +2</span>
+        You need <b>17 or better</b> → <b>21%</b>.`)+
+      line("The wound",`<span class="math">4 + 8 (Gap Rating) + 0 (Gap Bite) = wound 12</span>
+        No dice were rolled. Your Deftness never entered it. His CON never entered it.`)+
+      `<div class="line verdict-row"><b>Result</b><span>
+        <b>Piercing · Head · wound 12 — Serious — “Nicked carotid/jugular”</b><br>
+        bleed <b>torrent</b> (10% of maximum CON per minute — he empties in about ten minutes) ·
+        structure toll <b>−15% of maximum CON</b>.<br>
+        <em>On a natural 20</em> there is no force to double, so a clean strike drives the point
+        <b>4 wounds deeper</b> → wound 16, <em>“weapon lodged in the skull/jaw.”</em></span></div>`)}
+
+    ${wex("2 · A half-sworded longsword into a fluted cuirass",
+      "You are on your feet with a sword, and he is in the best chest armour in the game.",
+      line("Target number","Chest base AC <b>10</b> + Agility <b>+5</b> = <b>15</b>. The cuirass's <b>AC −1 is ignored</b>.")+
+      line("Your roll",`<span class="math">d20 +5 (bd_avg: Brawn +5 and Deftness +5 average to +5) +5 (Skill) −8 (cuirass Gap) −1 (longsword) = d20 +1</span>
+        You need <b>14 or better</b> → <b>37%</b>.`)+
+      line("The wound",`<span class="math">4 + 8 − 1 = wound 11</span>
+        <b>Piercing · Chest · wound 11 — Serious — “Penetration nicking the internal vessels”</b>,
+        bleed <b>flow</b>, toll <b>−15%</b>.`)+
+      line("Or just swing it",`Force is <code>1d12 × (Brawn 20 ÷ 10)</code> = 2–24. The cuirass answers
+        a thrust at <b>×0.5 then −2</b>, so at the very best <code>24 × 0.5 − 2 = 10</code> arrives
+        against a Wound Step of <code>20 ÷ 5 = 4</code>. That is <b>wound 1.67 on average and never
+        above 3</b>, and you hit essentially every time.`)+
+      `<div class="line verdict-row"><b>The trade</b><span>
+        <b>Gap thrust: 0.37 × 11 = 4.1 wounds per action. Ordinary swing: 1.67.</b>
+        Two and a half times better — and that is the whole reason to half-sword against plate.</span></div>`)}
+
+    ${wex("3 · A rapier at the same cuirass",
+      "The same knight, the same seam, a duelling sword instead of a dagger.",
+      line("Your roll",`<span class="math">d20 +5 (Deftness) +5 (Skill) −8 (cuirass Gap) −3 (rapier) = d20 −1</span>
+        You need <b>16 or better</b> → <b>26%</b>.`)+
+      line("The wound",`<span class="math">4 + 8 − 3 = wound 9</span>
+        <b>Piercing · Chest · wound 9 — Serious — “Penetration between the ribs (pleura)”.</b>`)+
+      `<div class="line verdict-row"><b>The ranking</b><span>Against the identical target:
+        stiletto <b>0.42 × 12 = 5.0</b> · half-sworded longsword <b>0.37 × 11 = 4.1</b> ·
+        rapier <b>0.26 × 9 = 2.3</b>. The dedicated point is more than twice the duelling sword,
+        and it wins on <em>both</em> halves — easier to land and deeper once in.</span></div>`)}
+
+    ${wex("4 · A clean strike where nothing else works",
+      "An arming sword against a fluted cuirass on a target with CON 30. Every roll of the die reads wound 1.",
+      line("Best possible",`<span class="math">1d8 rolls 8 → 8 × (Brawn 20 ÷ 10) = 16 force
+16 × 0.5 (thrust) − 2 = 6 arrives  ·  Wound Step = 30 ÷ 5 = 6  ·  6 ÷ 6 = wound 1</span>`)+
+      line("A poor roll",`<span class="math">1d8 rolls 3 → 6 force  ·  6 × 0.5 − 2 = 1 arrives  ·  1 ÷ 6 = wound 1</span>`)+
+      line("Crit the good roll",`A clean strike counts the blow as arriving with <b>twice the force</b>,
+        doubled <em>before</em> armour — and here there is something to double:
+        <span class="math">16 → 32 force  ·  32 × 0.5 − 2 = 14 arrives  ·  14 ÷ 6 = 2.33 → wound 3</span>`)+
+      line("Crit the bad roll",`Now the same clean strike on the poor swing, where doubling has almost
+        nothing to work with: <span class="math">6 → 12 force  ·  12 × 0.5 − 2 = 4 arrives  ·  4 ÷ 6 = 0.67 → still rounds to wound 1</span>`)+
+      `<div class="line verdict-row"><b>The floor</b><span>A clean strike is <b>never less than one
+        wound worse</b> than the same blow without it, so that bad roll reads <b>wound 2</b>, not 1.
+        Doubling nothing is still nothing — this floor is the only thing in the whole chain that can
+        beat a hard ceiling, and it is why a natural 20 through plate always means <em>something</em>
+        even when the swing behind it was poor.</span></div>`)}
+
+    ${wex("5 · A punishing strike, and why it is not a gap thrust",
+      "You have advantage. Spend it and the blow arrives with half again the force — multiplied before armour.",
+      line("Against a bandit",`Longsword, padded jack, CON 14. Ordinary: <b>4.83</b> average.
+        Punished: <code>1d12 × 2 × 1.5</code> → roughly <b>7</b>. A real gain.`)+
+      line("Against the knight",`The same punished blow into a fluted cuirass:
+        <span class="math">24 × 1.5 = 36 force  ·  36 × 0.5 − 2 = 16 arrives  ·  16 ÷ 4 = wound 4 at the very best</span>
+        and on an average roll it still reads <b>1 or 2</b>.`)+
+      `<div class="line verdict-row"><b>Why the two never overlap</b><span>Swinging harder multiplies a
+        number the harness is about to divide back down. <b>You cannot beat plate by trying harder</b> —
+        that is what the gap thrust is for. And a gap thrust reads a flat wound, so there is no force
+        there for advantage to multiply: the engine refuses the combination rather than let you waste
+        it. Every turn you hold an edge is therefore a real choice — swing harder, or thread the seam?</span></div>`)}`;
+
+  /* ---------- the gap thrust in full ---------- */
+  const gapWeapons=(DATA.weapons||[]).filter(w=>w.vitalGap)
+    .sort((a,b)=>(a.gapPenalty-b.gapPenalty)||a.name.localeCompare(b.name));
+  const gapSection=`
+    <p class="note">Every other attack asks <em>how hard did you hit</em>. This one does not ask,
+    because the answer would not matter: a rondel driven into a visor slit does not kill a man by
+    being heavy. <b>No dice are rolled, no damage stat is read, no toughness is compared, and the
+    armour's damage reduction is never applied.</b> A giant and a child get the identical result —
+    which is the point, since it is the one attack that ignores the gap between what you are and
+    what you are fighting.</p>
+    <div class="blk"><h5>The two lines</h5>
+      <p><span class="math">TO HIT   d20 + hit-stat + Skill Rank − armour Gap Rating − weapon Gap Penalty
+         vs   region base AC + Faculty bonus        ← the armour's own AC is IGNORED</span></p>
+      <p><span class="math">WOUND    4 + armour Gap Rating + weapon Gap Bite    ← flat, and +4 more on a crit</span></p>
+      <p>Cost: your <b>whole action</b>. An ordinary Attack spends one swing of it. That is the
+      regulator that does most of the work — a fighter with three attacks is nearly always better
+      off swinging three times.</p>
+    </div>
+    <p class="note"><b>Only these ten weapons may declare it.</b> Never a broadhead, never a blade
+    used to cut, never a blunt head — you cannot thread a seam with a hammer. A gap thrust always
+    reads the <b>Piercing</b> ladder whatever else the weapon does, which is why the Zweihänder
+    (a cutting weapon) still reads Piercing when half-sworded into a seam.</p>
+    ${wide(tbl(["Weapon","Dice","Damage types","Hit stat","Gap Penalty","Gap Bite","vs mail","vs full harness"],
+      gapWeapons.map(w=>[w.name,w.dice[0]+"d"+w.dice[1],w.types.map(t=>DTYPE[t]).join(" / "),
+        statLabel(w.hit),w.gapPenalty,sgn(w.gapBite),
+        "wound "+Math.max(1,Math.min(20,4+4+w.gapBite)),
+        "wound "+Math.max(1,Math.min(20,4+8+w.gapBite))])))}
+    <p class="note"><b>Why the weapon's number costs twice.</b> Whatever makes a weapon poor at
+    threading a seam — a wide blade, a whippy point, nothing to put your weight behind — is the same
+    thing that makes it drive badly once it is in there. So Gap Bite is minus the Gap Penalty: one
+    property, charged once to find the seam and once for what you do with it. This is the one thing
+    daggers are the best in the game at, which matters, because in open fighting they are the worst
+    weapons on the list.</p>
+    <p class="note"><b>The workbook has no rondel, estoc or ahlspiess.</b> The Dagger and Stiletto
+    rows are the rondel-class entries in the current data.</p>`;
+
+  /* ---------- assemble, and build the contents from the same list ---------- */
+  const SECS=[
+    {id:"ref-curve",  t:"The stat curve", body:`
       <p class="note">${esc((R.vitality||{}).bonusFormula||"")} — from <b>${esc((R.vitality||{}).source||"")}</b>.
       Pool scales linearly and without limit; the action bonus compresses. Every doubling is +5 to what you can <em>do</em> and ×2 to what you can <em>take</em>.</p>
-      ${tbl(["Stat V","Band","Pool","Action bonus"],((R.vitality||{}).bands||[]).map(b=>[b.v,b.band,b.v,sgn(bonusOf(b.v))]))}
-    </div>
-    <div class="card"><h3>Zero-states</h3>
+      ${tbl(["Stat V","Band","Pool","Action bonus"],((R.vitality||{}).bands||[]).map(b=>[b.v,b.band,b.v,sgn(bonusOf(b.v))]))}`},
+    {id:"ref-zero",   t:"Zero-states", body:`
       <p class="note">A Structure stat at 0 means that region fails; a Faculty stat at 0 means the capability is lost. Only CON kills.</p>
-      ${tbl(["Stat","Kind","Region","At 0"],((R.vitality||{}).stats||[]).map(s=>[s.name,s.kind,s.region,s.zero]))}
-    </div>
-    <div class="grid2">
-      <div class="card"><h3>Runic Flow</h3>
-        <p class="note">${esc((R.runic||{}).leFormula||"")} — ${esc((R.runic||{}).wellpointNote||"")}</p>
-        ${tbl(["Tier","LE pool"],((R.runic||{}).tiers||[]).map(t=>[t.tier,t.range]))}
-        ${tbl(["Complexity tier","Range"],((R.runic||{}).complexityTiers||[]).map(t=>[t.tier,t.min+"–"+t.max]))}
-      </div>
-      <div class="card"><h3>Paladin — Oath Strain</h3>
-        <p class="note">${esc((R.paladin||{}).soulTest||"")}</p>
-        ${tbl(["Tier","Soul Capacity"],((R.paladin||{}).soulCapacity||[]).map(t=>[t.tier,t.capacity]))}
-        ${tbl(["Overstrain","Degree","Danger"],((R.paladin||{}).degrees||[]).map(d=>
-          [d.max>90?d.min+"+":d.min+"–"+d.max,d.degree,d.danger]))}
-      </div>
-    </div>
-    <div class="card"><h3>Paladin — strain costs</h3>
-      ${tbl(["Power","Strain"],((R.paladin||{}).strainCosts||[]).map(s=>[s.power,s.strain]))}
-    </div>
-    <div class="grid2">
-      <div class="card"><h3>Living Current — the land</h3>
-        ${tbl(["Rating","Environment","Safe Power","Ambient Draw"],((R.living||{}).natureRatings||[]).map(r=>
-          [r.rating,r.env,r.power,r.pool]))}
-      </div>
-      <div class="card"><h3>Living Current — Phases</h3>
-        ${tbl(["Phase","Associations"],((R.living||{}).phases||[]).map(p=>[p.phase,p.assoc]))}
-      </div>
-    </div>
-    <div class="grid2">
-      <div class="card"><h3>Anchor sources</h3>
-        ${tbl(["Mode","Power source","Ceiling"],((R.living||{}).modes||[]).map(m=>[m.mode,m.source,m.ceiling]))}
-      </div>
-      <div class="card"><h3>Communion overdraw</h3>
-        ${tbl(["Beyond pool","Result"],((R.living||{}).overdraw||[]).map(o=>[o.over,o.result]))}
-      </div>
-    </div>
-    <div class="card"><h3>Wounds — grading the blow</h3>
+      ${tbl(["Stat","Kind","Region","At 0"],((R.vitality||{}).stats||[]).map(s=>[s.name,s.kind,s.region,s.zero]))}`},
+    {id:"ref-wounds", t:"Wounds — grading the blow", body:`
       <p class="note">${esc((R.wounds||{}).roll||"")} — from <b>${esc((R.wounds||{}).source||"")}</b>.
       The divisor is the region's <em>current</em> toughness, so the spiral accelerates itself: as a
       region is worn down its Wound Step shrinks, and the very same blow divides into a bigger wound.</p>
-      ${tbl(["Blow vs toughness","Lands on","Feel"],((R.wounds||{}).severityBands||[]).map(b=>[b.ratio+"x","wound "+b.row,b.feel]))}
-    </div>
-    <div class="card"><h3>The three edges — each pulls a different lever</h3>
+      ${tbl(["Blow vs toughness","Lands on","Feel"],((R.wounds||{}).severityBands||[]).map(b=>[b.ratio+"x","wound "+b.row,b.feel]))}`},
+    {id:"ref-edges",  t:"The three edges — each pulls a different lever", body:`
       <p class="note">Only three things bend that division, and the design turns on their being different
       <em>shapes</em> rather than three sizes of one bonus. Two of them multiply the force and armour
       still answers them; the third multiplies nothing at all.</p>
-      ${tbl(["Edge","Costs","What it does","Armour"],((R.wounds||{}).edges||[]).map(e=>[e.edge,e.costs,e.does,e.armour]))}
-      <p class="note"><b>What the seam is worth</b>, by what it went around: bare flesh <b>0</b> → 4 ·
-      padded <b>1</b> → 5 · mail or brigandine <b>4</b> → 8 · breastplate <b>7</b> → 11 · full plate or a
-      great helm <b>8</b> → 12. The same Gap Rating is the penalty to find the seam, so the harder a seam
-      is to find the more it is worth finding — and on bare flesh it is worth almost nothing, which is
-      why nobody gap-thrusts a naked man.</p>
-      <p class="note"><b>What your weapon does once the point is in</b> — its Gap Bite, which is minus its
-      Gap Penalty, because whatever makes a weapon bad at threading a seam makes it bad at driving there:
-      a rondel-class dagger or stiletto <b>0</b> · a half-sworded longsword <b>−1</b> · an arming sword
-      <b>−2</b> · a rapier <b>−3</b>. Through a full harness that is wound 12 · 11 · 10 · 9. The daggers
-      are the best in the game at this, and it is the only thing they are best at.</p>
-      <p class="note">${esc((R.wounds||{}).escape||"")}</p>
-    </div>
-    <div class="grid2">
-      <div class="card"><h3>Bleed bands</h3>
-        <p class="note">A %-of-max drain, so a peasant and a titan bleed out in the same time — an artery is an artery.</p>
-        ${tbl(["Band","Drain","Empties"],((R.wounds||{}).bleedBands||[]).map(b=>[b.band,b.pct+"% / "+b.per,b.empties]))}
+      ${wide(tbl(["Edge","Costs","What it does","Armour"],((R.wounds||{}).edges||[]).map(e=>[e.edge,e.costs,e.does,e.armour])))}
+      <p class="note">${esc((R.wounds||{}).escape||"")}</p>`},
+    {id:"ref-gap",    t:"Vital Gap — the seam and the weapon", body:gapSection},
+    {id:"ref-armour", t:"Armour — every number explained", body:armourSection},
+    {id:"ref-worked", t:"Worked examples — five blows, start to finish", body:workedSection},
+    {id:"ref-bleed",  t:"Bleed bands and region → stat", body:`
+      <div class="grid2">
+        <div><h5 class="blkh">Bleed bands</h5>
+          <p class="note">A %-of-max drain, so a peasant and a titan bleed out in the same time — an artery is an artery.</p>
+          ${tbl(["Band","Drain","Empties"],((R.wounds||{}).bleedBands||[]).map(b=>[b.band,b.pct+"% / "+b.per,b.empties]))}</div>
+        <div><h5 class="blkh">Region → stat</h5>
+          ${tbl(["Region","Graded vs","Spends"],((R.wounds||{}).regions||[]).map(r=>
+            [r.region,r.tough.toUpperCase(),(r.spends||[]).map(s=>s.toUpperCase()).join(" / ")]))}
+          ${tbl(["Flat malus","Scaled","Example"],((R.wounds||{}).malusScale||[]).map(m=>
+            ["−"+m.flat,"−"+m.pct+"% of max",m.example]))}</div>
+      </div>`},
+    {id:"ref-runic",  t:"Runic Flow and Oath Strain", body:`
+      <div class="grid2">
+        <div><h5 class="blkh">Runic Flow</h5>
+          <p class="note">${esc((R.runic||{}).leFormula||"")} — ${esc((R.runic||{}).wellpointNote||"")}</p>
+          ${tbl(["Tier","LE pool"],((R.runic||{}).tiers||[]).map(t=>[t.tier,t.range]))}
+          ${tbl(["Complexity tier","Range"],((R.runic||{}).complexityTiers||[]).map(t=>[t.tier,t.min+"–"+t.max]))}</div>
+        <div><h5 class="blkh">Paladin — Oath Strain</h5>
+          <p class="note">${esc((R.paladin||{}).soulTest||"")}</p>
+          ${tbl(["Tier","Soul Capacity"],((R.paladin||{}).soulCapacity||[]).map(t=>[t.tier,t.capacity]))}
+          ${tbl(["Overstrain","Degree","Danger"],((R.paladin||{}).degrees||[]).map(d=>
+            [d.max>90?d.min+"+":d.min+"–"+d.max,d.degree,d.danger]))}</div>
       </div>
-      <div class="card"><h3>Region → stat</h3>
-        ${tbl(["Region","Graded vs","Spends"],((R.wounds||{}).regions||[]).map(r=>
-          [r.region,r.tough.toUpperCase(),(r.spends||[]).map(s=>s.toUpperCase()).join(" / ")]))}
-        ${tbl(["Flat malus","Scaled","Example"],((R.wounds||{}).malusScale||[]).map(m=>
-          ["−"+m.flat,"−"+m.pct+"% of max",m.example]))}
+      <h5 class="blkh">Paladin — strain costs</h5>
+      ${tbl(["Power","Strain"],((R.paladin||{}).strainCosts||[]).map(s=>[s.power,s.strain]))}`},
+    {id:"ref-living", t:"Living Current — the land, phases and anchors", body:`
+      <div class="grid2">
+        <div><h5 class="blkh">The land</h5>
+          ${tbl(["Rating","Environment","Safe Power","Ambient Draw"],((R.living||{}).natureRatings||[]).map(r=>
+            [r.rating,r.env,r.power,r.pool]))}</div>
+        <div><h5 class="blkh">Phases</h5>
+          ${tbl(["Phase","Associations"],((R.living||{}).phases||[]).map(p=>[p.phase,p.assoc]))}</div>
       </div>
-    </div>
-    <div class="grid2">
-      <div class="card"><h3>Alchemy — phase groups</h3>
-        <p class="note">${esc((R.alchemy||{}).pow||"")} — from <b>${esc((R.alchemy||{}).source||"")}</b>.
-        Effects in the same group but a different phase cancel in Stage 1.</p>
-        ${tbl(["Group","Phases"],((R.alchemy||{}).phaseGroups||[]).map(g=>
-          [g.group,g.phases.map(p=>p.replace(" Phase","")).join(" · ")]))}
+      <div class="grid2">
+        <div><h5 class="blkh">Anchor sources</h5>
+          ${tbl(["Mode","Power source","Ceiling"],((R.living||{}).modes||[]).map(m=>[m.mode,m.source,m.ceiling]))}</div>
+        <div><h5 class="blkh">Communion overdraw</h5>
+          ${tbl(["Beyond pool","Result"],((R.living||{}).overdraw||[]).map(o=>[o.over,o.result]))}</div>
+      </div>`},
+    {id:"ref-alch",   t:"Alchemy — phases, stages and modulators", body:`
+      <div class="grid2">
+        <div><h5 class="blkh">Phase groups</h5>
+          <p class="note">${esc((R.alchemy||{}).pow||"")} — from <b>${esc((R.alchemy||{}).source||"")}</b>.
+          Effects in the same group but a different phase cancel in Stage 1.</p>
+          ${tbl(["Group","Phases"],((R.alchemy||{}).phaseGroups||[]).map(g=>
+            [g.group,g.phases.map(p=>p.replace(" Phase","")).join(" · ")]))}</div>
+        <div><h5 class="blkh">The two stages</h5>
+          ${((R.alchemy||{}).stages||[]).map(s=>
+            `<div class="blk"><h5>Stage ${s.stage} — ${esc(s.name)}</h5><p>${esc(s.rule)}</p></div>`).join("")}
+          <p class="note">${esc((R.alchemy||{}).levelNote||"")}</p></div>
       </div>
-      <div class="card"><h3>Alchemy — the two stages</h3>
-        ${((R.alchemy||{}).stages||[]).map(s=>
-          `<div class="blk"><h5>Stage ${s.stage} — ${esc(s.name)}</h5><p>${esc(s.rule)}</p></div>`).join("")}
-        <p class="note">${esc((R.alchemy||{}).levelNote||"")}</p>
-      </div>
-    </div>
-    <div class="card"><h3>Alchemy — modulator tiers</h3>
+      <h5 class="blkh">Modulator tiers</h5>
       ${tbl(["Tier","Multiplier range","Notes"],((R.alchemy||{}).modulatorTiers||[]).map(t=>
-        ["T"+t.tier,t.min+" – "+t.max,t.note]))}
-    </div>`;
+        ["T"+t.tier,t.min+" – "+t.max,t.note]))}`},
+  ];
+
+  // The contents is generated from the section list, so it can never list a
+  // section that is not there or miss one that is.
+  const toc=`<div class="card"><h3>Contents</h3>
+    <nav class="toc">${SECS.map((sec,i)=>
+      `<a href="#${sec.id}"><i>${String(i+1).padStart(2,"0")}</i>${esc(sec.t)}</a>`).join("")}</nav></div>`;
+
+  $("#p-reference").innerHTML=toc+SECS.map(sec=>
+    `<div class="card" id="${sec.id}"><h3>${esc(sec.t)}</h3>${sec.body}</div>`).join("");
+
+  $$("#p-reference [data-armloc]").forEach(b=>b.onclick=()=>{
+    REF.armLoc=b.dataset.armloc; renderReference();
+    const el=document.getElementById("ref-armour"); if(el) el.scrollIntoView({block:"start"});
+  });
 }
 
 /* ===================== gear + the attack engine =====================
