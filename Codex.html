@@ -418,6 +418,28 @@ h4{font-family:'Spline Sans Mono',monospace;font-size:.68rem;letter-spacing:.2em
 .toc a:hover{color:var(--gild)}
 .toc a i{font-family:'Spline Sans Mono',monospace;font-style:normal;color:var(--bone-faint);
   font-size:.7rem;margin-right:9px}
+/* group headings inside the contents, and the matching rule between sections */
+.toc h6{font-family:'Spline Sans Mono',monospace;font-size:.56rem;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--gild-dim);margin:14px 0 4px;break-inside:avoid;
+  break-after:avoid;border-bottom:1px solid var(--gild-dim);padding-bottom:4px}
+.toc h6:first-child{margin-top:0}
+.refgroup{font-family:'Spline Sans Mono',monospace;font-size:.6rem;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--gild-dim);margin:30px 0 10px;padding-bottom:6px;
+  border-bottom:1px solid var(--line)}
+.refn{font-family:'Spline Sans Mono',monospace;font-style:normal;font-size:.68rem;
+  color:var(--bone-faint);margin-right:10px;vertical-align:2px}
+
+/* a term, what it stands for, and what it means */
+.glossary{display:grid;gap:2px;margin:10px 0 4px}
+.gl{display:grid;grid-template-columns:minmax(96px,150px) 1fr;gap:12px;padding:7px 0;
+  border-bottom:1px solid #241d17;font-size:.9rem;align-items:baseline}
+@media(max-width:620px){.gl{grid-template-columns:1fr}}
+.gl>b{font-family:'Spline Sans Mono',monospace;font-size:.82rem;color:var(--gild)}
+.gl>b sub{font-size:.7em}
+.gl>i{display:block;font-family:'Spline Sans Mono',monospace;font-style:normal;font-size:.56rem;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--bone-faint);grid-column:1;margin-top:2px}
+.gl>i+span{grid-column:2;grid-row:1/3}
+.gl>span{color:var(--bone-dim)}
 .wex{margin:18px 0;padding:14px 16px;background:var(--ink2);border:1px solid var(--line);
   border-left:3px solid var(--gild-dim);border-radius:0 3px 3px 0}
 .wex>h5{font-family:'IM Fell English SC',serif;font-size:1.02rem;color:var(--bone);margin:0 0 4px;letter-spacing:.01em}
@@ -635,6 +657,12 @@ table.t tr:hover td{background:var(--panel2)}
 .wrow{display:grid;grid-template-columns:64px 1fr;gap:12px;padding:8px 10px;border-bottom:1px solid #241d17;
   border-left:3px solid var(--bc,var(--line));font-size:.9rem;align-items:start}
 .wrow.hit{background:var(--panel2);box-shadow:inset 0 0 0 1px var(--gild-dim)}
+/* every rung can be taken directly, so every rung has to look takeable */
+.wrow.pickable{cursor:pointer}
+.wrow.pickable:hover{background:var(--panel2)}
+/* the blow card, while a rung is chosen off the ladder instead */
+.card.muted{opacity:.55}
+.card.muted:hover{opacity:1}
 .wrow .rng{font-family:'Spline Sans Mono',monospace;font-size:.72rem;color:var(--bone-faint)}
 .wrow .bd{font-family:'Spline Sans Mono',monospace;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:var(--bc)}
 .wtable{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:2px;background:var(--ink2)}
@@ -2105,7 +2133,11 @@ function wireLiving(c){
    region is wounded, the same blow divides into a bigger number later in a fight
    and the spiral accelerates itself. (The retired form was d100 + 25*log2(ratio)
    + a flat crit; §13.7 records why each part of it went.) */
-let WND={mode:"physical",region:"Chest",type:"Slashing",blow:11,pen:1,crit:false,roll:null,
+// `pick` is a wound chosen straight off the ladder, bypassing the blow entirely.
+// A GM narrating an injury -- a fall, a trap, "the wolf takes your arm" -- has a
+// wound in mind and no blow to compute, and making them reverse-engineer a blow
+// power that lands on it is busywork the table should not have to do.
+let WND={mode:"physical",region:"Chest",type:"Slashing",blow:11,pen:1,crit:false,roll:null,pick:null,
   depth:{fire:{deg:"d2",area:0,parts:["chest"]},cold:{deg:"d2",area:0,parts:["arm"]},acid:{deg:"d2",area:0,parts:["chest"]}},
   hypo:{cond:1,stage:2},
   poison:{fam:0,pot:1,deliv:0,doses:1,stage:2},
@@ -2221,9 +2253,13 @@ function renderWounds(){
   const step=woundStep(tough);
   const baseNum=clampWound(woundFromBlow(effBase,tough));
   const rowBase=woundFromBlow(eff,tough);
-  const rowNum=crit?Math.min(WOUND_MAX,Math.max(clampWound(rowBase),baseNum+1))
-                   :clampWound(rowBase);
-  const critFloored=crit&&clampWound(rowBase)<baseNum+1;
+  const computed=crit?Math.min(WOUND_MAX,Math.max(clampWound(rowBase),baseNum+1))
+                     :clampWound(rowBase);
+  // A row chosen off the ladder wins over the computed one. The blow figures
+  // stay on screen, greyed, so it is obvious which number is in force.
+  const picked=WND.pick!=null;
+  const rowNum=picked?clampWound(WND.pick):computed;
+  const critFloored=!picked&&crit&&clampWound(rowBase)<baseNum+1;
   const row=woundRowNumIn(WND.type+"|"+WND.region,rowNum);
 
   const dv=(l,v,n)=>`<div class="dv"><b>${v}</b><span>${l}</span>${n?`<small>${n}</small>`:""}</div>`;
@@ -2271,9 +2307,12 @@ function renderWounds(){
         ${row?`<span>›</span><b>${esc(row.band)}</b>`:""}
       </div>
 
-    <div class="card">
-      <h3>The blow</h3>
-      <p class="note" style="margin:0 0 12px">${esc(W.roll||"")} — graded against the region's <em>current</em> Structure stat, so a battered region is wounded far more easily than a fresh one.</p>
+    <div class="card${picked?" muted":""}">
+      <h3>The blow${picked?" — not in use":""}</h3>
+      <p class="note" style="margin:0 0 12px">${picked
+        ? `You have <b>chosen wound ${rowNum} straight off the ladder</b>, so nothing here is being read.
+           <button class="btn" id="w-unpick">Go back to the blow</button>`
+        : `${esc(W.roll||"")} — graded against the region's <em>current</em> Structure stat, so a battered region is wounded far more easily than a fresh one.`}</p>
       <div class="act">
         <label style="font-family:'Spline Sans Mono',monospace;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--bone-faint)">Blow power</label>
         <input type="number" id="w-blow" value="${WND.blow}">
@@ -2304,6 +2343,9 @@ function renderWounds(){
 
     ${row?`<div class="card band-${esc(row.band)}">
       <h3>${esc(row.wound)}</h3>
+      <p class="note" style="margin:-4px 0 10px">${picked
+        ? `<b>Wound ${rowNum}</b>, chosen from the ladder below — no blow was calculated.`
+        : `<b>Wound ${rowNum}</b>, from the blow above. To take a different one, click any row in the ladder.`}</p>
       ${woundChips(row,null)}
       ${woundRows(row,{loc:WND.region})}
       <div class="kv"><b>Spends</b><span>${(info.spends||[]).map(s=>s.toUpperCase()).join(" / ")} — ${esc(info.note||"")}</span></div>
@@ -2319,8 +2361,12 @@ function renderWounds(){
 
     <div class="card">
       <h3>${esc(WND.type)} · ${esc(WND.region)} — the full ladder</h3>
+      <p class="note" style="margin:0 0 10px">Click any row to take that wound directly — useful when the
+        injury comes from the fiction rather than from a swing: a fall, a trap, a beast that has already
+        bitten. ${picked?`<b>Wound ${rowNum} is selected.</b>`:""}</p>
       <div class="wtable">${table.map(r=>`
-        <div class="wrow band-${esc(r.band)}${row&&r.n===row.n?" hit":""}">
+        <div class="wrow pickable band-${esc(r.band)}${row&&r.n===r.n&&r.n===rowNum?" hit":""}"
+             data-pickrow="${r.n}" title="Take this wound directly">
           <div><div class="rng">${r.n}</div><div class="bd">${esc(r.band)}</div></div>
           <div><b class="care" title="${esc(careTitle(r,WND.region))}">${esc(r.wound)}${
             hasCare(r)?' <span class="caremark">✚</span>':""}</b>${woundBrief(r,WND.region)}</div></div>`).join("")}</div>
@@ -2341,9 +2387,19 @@ function renderWounds(){
     el.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go();}};
   });
   const on=(id,ev,fn)=>{const e=document.getElementById(id);if(e)e[ev]=fn;};
-  on("w-blow","onchange",e=>{WND.blow=Math.max(0,num(e.target.value,WND.blow));renderWounds();});
-  on("w-pen","onchange",e=>{WND.pen=parseFloat(e.target.value)||1;renderWounds();});
-  on("w-crit","onchange",e=>{WND.crit=e.target.checked;renderWounds();});
+  // Touching any blow input means you want the blow back, so it releases a
+  // directly-picked row rather than leaving two answers on screen.
+  on("w-blow","onchange",e=>{WND.blow=Math.max(0,num(e.target.value,WND.blow));WND.pick=null;renderWounds();});
+  on("w-pen","onchange",e=>{WND.pen=parseFloat(e.target.value)||1;WND.pick=null;renderWounds();});
+  on("w-crit","onchange",e=>{WND.crit=e.target.checked;WND.pick=null;renderWounds();});
+  on("w-unpick","onclick",()=>{WND.pick=null;renderWounds();});
+  $$("#p-wounds [data-pickrow]").forEach(el=>el.onclick=()=>{
+    WND.pick=num(el.dataset.pickrow,null);
+    renderWounds();
+    const card=$("#p-wounds .card.band-"+CSS.escape(
+      (woundRowNumIn(WND.type+"|"+WND.region,WND.pick)||{}).band||""));
+    if(card) card.scrollIntoView({block:"center",behavior:"smooth"});
+  });
   on("w-apply","onclick",()=>{
     if(!row) return;
     const key=($("#w-stat")||{}).value||info.spends[0];
@@ -3341,6 +3397,13 @@ function renderReference(){
     <tbody>${rows.map(r=>`<tr>${r.map(cell=>`<td>${esc(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
   const wide=t=>`<div class="tscroll">${t}</div>`;
 
+  /* One glossary entry: the term, what it stands for, and what it means. Used
+     by both the formula section and the gap section, so it is declared above
+     both -- a const referenced from a template literal defined earlier is in
+     the temporal dead zone and throws. */
+  const gl=(term,expand,what)=>`<div class="gl"><b>${term}</b>${
+    expand?`<i>${expand}</i>`:""}<span>${what}</span></div>`;
+
   /* ---------- armour: every number on a piece, and what it means ---------- */
   const pieces=(DATA.armor||{})[REF.armLoc]||[];
   const dr=pair=>`×${pair[0]}${pair[1]?` −${pair[1]}`:""}`;
@@ -3466,13 +3529,30 @@ function renderReference(){
     which is the point, since it is the one attack that ignores the gap between what you are and
     what you are fighting.</p>
     <div class="blk"><h5>The two lines</h5>
-      <p><span class="math">TO HIT   d20 + hit-stat + Skill Rank − armour Gap Rating − weapon Gap Penalty
-         vs   region base AC + Faculty bonus        ← the armour's own AC is IGNORED</span></p>
-      <p><span class="math">WOUND    4 + armour Gap Rating + weapon Gap Bite    ← flat, and +4 more on a crit</span></p>
+      <p><span class="math">TO HIT   d20 + HitStat + SR − GapRating − GapPen
+         vs   RegionBase + FacBonus        ← ArmourAC is IGNORED</span></p>
+      <p><span class="math">WOUND    ${GAP_BASE} + GapRating + GapBite    ← flat, and +${GAP_CRIT_ROWS} more on a crit</span></p>
       <p>Cost: your <b>whole action</b>. An ordinary Attack spends one swing of it. That is the
       regulator that does most of the work — a fighter with three attacks is nearly always better
       off swinging three times.</p>
     </div>
+    <h5 class="blkh">Every term in those two lines</h5>
+    <div class="glossary">
+      ${gl("HitStat","","The action bonus of the stat this weapon aims with — <b>not</b> the stat itself. Bonus = round(5 · log₂(V ÷ 10)), so Deftness 20 is +5.")}
+      ${gl("SR","Skill Rank","Training with this weapon, 0–10. It helps you <em>find</em> the seam and does nothing to the wound once you are in.")}
+      ${gl("GapRating","Armour Gap Rating","<b>0–8, a property of the armour piece.</b> How hard that harness is to find a seam in. It does double duty and this is the design: it is <b>subtracted from your roll</b> and <b>added to your wound</b>. A fluted cuirass rates <b>8</b> — almost nothing is exposed, so finding something means you found his throat or his eye. A padded jack rates low: gaps everywhere, so finding one means very little. <b>Bare flesh rates 0</b> — there is no armour to go around, so a gap thrust into a naked man reads a flat wound " + GAP_BASE + " for your whole action, which is worse than simply stabbing him.")}
+      ${gl("GapPen","Weapon Gap Penalty","<b>A property of the weapon.</b> How poorly it threads a seam — a wide blade, a whippy point, nothing to put your weight behind. Subtracted from your roll on top of the armour's Gap Rating. A rondel-class point is <b>0</b>; a rapier is <b>3</b>.")}
+      ${gl("GapBite","Weapon Gap Bite","<b>Also a property of the weapon</b>, and always <b>minus its Gap Penalty</b>. How well it drives once the point is in. Whatever makes a weapon poor at finding a seam is the same thing that makes it drive badly in there, so one property is charged twice — once to get in, once for what you do once you are.")}
+      ${gl("RegionBase","","The region's own base difficulty, 10 by default.")}
+      ${gl("FacBonus","Faculty bonus","The action bonus of the region's Faculty stat — Agility for body, legs and head, Deftness for arms. A gap thrust still has to beat the target's <em>reflexes</em>; it only bypasses their steel.")}
+      ${gl("ArmourAC","","Ignored entirely, and this is the point: heavy plate has a <em>negative</em> AC, so an attack that ignores armour AC gains nothing from the harness being heavy. What you face instead is its Gap Rating.")}
+      ${gl(String(GAP_BASE),"the base","The floor of the attack. It is the wound a seam is worth against no armour at all — enough to matter, not enough to be worth your whole action.")}
+      ${gl("+"+GAP_CRIT_ROWS,"on a crit","There is no force here for a clean strike to double, so it drives the point "+GAP_CRIT_ROWS+" wounds deeper instead — one full band. You found the seam perfectly and put the whole length in.")}
+    </div>
+    <p class="note"><b>What is NOT in either line.</b> No dice are rolled. No damage stat is read, so
+    <b>DmgMult never applies</b>. No armour DR is applied. No toughness is compared, so
+    <b>WoundStep never applies</b>. A giant and a child get the identical result — which is the point,
+    since this is the one attack that ignores the gap between what you are and what you are fighting.</p>
     <p class="note"><b>Only these ten weapons may declare it.</b> Never a broadhead, never a blade
     used to cut, never a blunt head — you cannot thread a seam with a hammer. A gap thrust always
     reads the <b>Piercing</b> ladder whatever else the weapon does, which is why the Zweihänder
@@ -3491,8 +3571,85 @@ function renderReference(){
     <p class="note"><b>The workbook has no rondel, estoc or ahlspiess.</b> The Dagger and Stiletto
     rows are the rondel-class entries in the current data.</p>`;
 
+  /* ---------- the whole chain, and every abbreviation in it ---------- */
+  const formulaSection=`
+    <p class="note">Every attack in the game runs this chain. Nothing else is added at the end, and
+    nothing is subtracted from a pool, because there is no pool. <b>One roll decides whether you
+    connect; after that there is no second roll</b> — the wound is a division.</p>
+
+    <div class="blk"><h5>1 · Do you connect?</h5>
+      <p><span class="math">d20 + HitStat + SR − GapPen   vs   AC<sub>region</sub></span></p>
+      <p><span class="math">AC<sub>region</sub> = RegionBase + FacBonus + ArmourAC</span></p>
+      <p class="note">GapPen is 0 unless you declared a gap thrust. On a gap thrust the target's
+      <b>ArmourAC is ignored</b> — you are going around the harness, not through it.</p>
+    </div>
+
+    <div class="blk"><h5>2 · How hard did it land?</h5>
+      <p><span class="math">Force = Dice × DmgMult × CritF × PunF</span></p>
+      <p><span class="math">DmgMult = DmgStat ÷ ${DMG_SCALE}</span></p>
+      <p class="note">Both multipliers apply <b>here</b>, before armour — which is what keeps them
+      honest. Swinging harder at a man in plate multiplies a number the harness is about to divide
+      straight back down.</p>
+    </div>
+
+    <div class="blk"><h5>3 · What survives the armour?</h5>
+      <p><span class="math">Arrives = max(0, Force × DR<sub>type</sub> − Flat<sub>type</sub>)</span></p>
+      <p class="note">The fraction depends on what <em>kind</em> of harm is arriving. A weapon with
+      two damage types resolves as whichever of them comes out worse for the target.</p>
+    </div>
+
+    <div class="blk"><h5>4 · How bad is the wound?</h5>
+      <p><span class="math">WoundStep = Tough<sub>cur</sub> ÷ ${WOUND_STEP_DIV}</span></p>
+      <p><span class="math">Wound = ⌈ Arrives ÷ WoundStep ⌉, clamped ${WOUND_MIN}–${WOUND_MAX}</span></p>
+      <p class="note">Equivalently <span class="math">Wound = ${WOUND_STEP_DIV} × Arrives ÷ Tough<sub>cur</sub></span>.
+      A blow level with the region reads <b>5</b>; twice as strong reads <b>10</b>; four times reads
+      <b>20</b>. The denominator is the region's <em>current</em> toughness, which is the whole
+      spiral: halve it and the same blow does twice the wound.</p>
+      <p class="note"><b>Crit floor.</b> A clean strike never reads less than one wound worse than the
+      same blow without it:
+      <span class="math">Wound<sub>crit</sub> = max(⌈${CRIT_FORCE} × Arrives ÷ WoundStep⌉, Wound<sub>plain</sub> + 1)</span></p>
+    </div>
+
+    <div class="blk"><h5>The gap thrust runs a different chain</h5>
+      <p><span class="math">Wound = ${GAP_BASE} + GapRating + GapBite  (+${GAP_CRIT_ROWS} on a crit)</span></p>
+      <p class="note">No dice, no DmgMult, no armour, no toughness. See the Vital Gap section for
+      every term.</p>
+    </div>
+
+    <h5 class="blkh">Every abbreviation, in the order it appears</h5>
+    <div class="glossary">
+      ${gl("d20","","One twenty-sided die. The only die in the chain that is not the weapon's.")}
+      ${gl("HitStat","Brawn · Deftness · Drive","The action bonus of the stat this weapon aims with, <b>not the stat itself</b>. Bonus = round(5 · log₂(V ÷ 10)), so a stat of 20 gives +5 and 40 gives +10.")}
+      ${gl("SR","Skill Rank","Training with this weapon, 0–10. Added flat to the attack roll only; it never touches the wound.")}
+      ${gl("GapPen","Gap Penalty","Only on a gap thrust: the armour's Gap Rating plus the weapon's own Gap Penalty, both subtracted from the roll.")}
+      ${gl("AC<sub>region</sub>","","The number to reach. Each body region has its own, because each is covered and exposed differently.")}
+      ${gl("RegionBase","","The region's own base difficulty before anything is worn. 10 by default; the design document leaves it open.")}
+      ${gl("FacBonus","Faculty bonus","The action bonus of the region's Faculty stat — Agility for body, legs and head, Deftness for arms. Dodging is a faculty, so a wounded one is easier to hit.")}
+      ${gl("ArmourAC","","What the worn piece adds to that number. <b>Heavy plate is negative</b>: you cannot dodge in a harness, so it makes you easier to hit and far harder to hurt.")}
+      ${gl("Dice","","The weapon's own dice, rolled and summed. 1d12 for a longsword, 2d8 for a bardiche.")}
+      ${gl("DmgStat","","The <em>current</em> value of the stat this weapon drives with — a property of the weapon, not of you. A weapon naming two stats averages them. Current, so a cut arm swings a weaker sword.")}
+      ${gl("DmgMult","","DmgStat ÷ 10. The 10 is the stat a trained human is built around, so it is the pivot: at 10 the multiplier is ×1.00 and the weapon does exactly what its dice say. Might <b>multiplies</b> and never adds, which is what keeps the system scale-free — two gods with mortal swords have the fight two trained humans have.")}
+      ${gl("CritF","Crit force","×"+CRIT_FORCE+" on a clean strike, ×1 otherwise.")}
+      ${gl("PunF","Punish force","×"+PUNISH_FORCE+" on a Punishing Strike (advantage spent), ×1 otherwise.")}
+      ${gl("DR<sub>type</sub>","Damage reduction","The fraction of the blow this piece lets through <em>for this damage type</em>. A fluted cuirass takes a cut to ×0.125 and a crushing blow to ×1.0 — which is why a hammer is the honest answer to a harness.")}
+      ${gl("Flat<sub>type</sub>","","A further flat amount taken off whatever survived the multiply — padding soaking up the last of it.")}
+      ${gl("Arrives","","What actually reaches the body. Everything the weapon did before this has already done its work.")}
+      ${gl("Tough<sub>cur</sub>","Toughness","The struck region's <b>current</b> Structure stat — CON for torso and head, Brawn for arms, Drive for legs.")}
+      ${gl("WoundStep","","Tough ÷ 5. The amount of arriving force that is worth one wound on the 1–20 ladder. Print it on the sheet and the wound is one division.")}
+      ${gl("Wound","","The result, 1–20, read on the struck region's ladder for that damage type. Five bands of four: Superficial 1–4, Minor 5–8, Serious 9–12, Grievous 13–16, Catastrophic 17–20.")}
+      ${gl("GapRating","","0–8. How hard the armour is to find a seam in. Does double duty — a penalty on the roll and a bonus to the wound.")}
+      ${gl("GapBite","","How well the weapon drives once the point is in. Equals minus its Gap Penalty: one property, charged twice.")}
+      ${gl("POW","","Not part of this chain — an alchemy term. A brewed potion's strength, <span class=\"math\">effect power ÷ surviving effects</span>.")}
+    </div>
+
+    <p class="note"><b>Three things are deliberately absent.</b> There is no wound die — the
+    comparison <em>is</em> the result. There is no damage total to subtract from anything. And there
+    is no flat bonus anywhere in the wound chain: every edge multiplies or replaces, which is why a
+    crit is worth more against someone you were already hurting and less against a harness.</p>`;
+
   /* ---------- assemble, and build the contents from the same list ---------- */
-  const SECS=[
+  const FLAT=[
+    {id:"ref-formula",t:"The whole combat formula, and every abbreviation in it", body:formulaSection},
     {id:"ref-curve",  t:"The stat curve", body:`
       <p class="note">${esc((R.vitality||{}).bonusFormula||"")} — from <b>${esc((R.vitality||{}).source||"")}</b>.
       Pool scales linearly and without limit; the action bonus compresses. Every doubling is +5 to what you can <em>do</em> and ×2 to what you can <em>take</em>.</p>
@@ -3607,14 +3764,44 @@ Strain      = Rune Force ÷ Resist Step, rounded up, capped 1–20</span></p>
         ["T"+t.tier,t.min+" – "+t.max,t.note]))}`},
   ];
 
-  // The contents is generated from the section list, so it can never list a
-  // section that is not there or miss one that is.
-  const toc=`<div class="card"><h3>Contents</h3>
-    <nav class="toc">${SECS.map((sec,i)=>
-      `<a href="#${sec.id}"><i>${String(i+1).padStart(2,"0")}</i>${esc(sec.t)}</a>`).join("")}</nav></div>`;
+  // Ordered by what a reader reaches for at the table: steel first, then the
+  // body it lands on, then the crafts and magics that answer it. Written as an
+  // order over IDS rather than by moving the bodies, so a section can be
+  // rewritten without touching this list -- and anything not named here still
+  // ships, at the end, rather than silently vanishing.
+  const ORDER=[
+    ["Combat — steel, armour and wounds",
+     ["ref-formula","ref-wounds","ref-edges","ref-gap","ref-armour","ref-worked","ref-bleed"]],
+    ["The body — what a blow is measured against",
+     ["ref-curve","ref-zero"]],
+    ["Craft",
+     ["ref-alch"]],
+    ["Magic",
+     ["ref-runes","ref-runic","ref-living"]],
+  ];
+  const byId={}; FLAT.forEach(s=>{ byId[s.id]=s; });
+  const SECS=[]; const placed=new Set();
+  ORDER.forEach(([label,ids])=>{
+    const have=ids.map(id=>byId[id]).filter(Boolean);
+    if(!have.length) return;
+    SECS.push({group:label});
+    have.forEach(s=>{ SECS.push(s); placed.add(s.id); });
+  });
+  const orphans=FLAT.filter(s=>!placed.has(s.id));
+  if(orphans.length){ SECS.push({group:"Everything else"}); orphans.forEach(s=>SECS.push(s)); }
 
-  $("#p-reference").innerHTML=toc+SECS.map(sec=>
-    `<div class="card" id="${sec.id}"><h3>${esc(sec.t)}</h3>${sec.body}</div>`).join("");
+  // The contents is generated from the same list, so it can never name a
+  // section that is not there or miss one that is.
+  let n=0;
+  const toc=`<div class="card"><h3>Contents</h3>
+    <nav class="toc">${SECS.map(sec=>sec.group
+      ? `<h6>${esc(sec.group)}</h6>`
+      : `<a href="#${sec.id}"><i>${String(++n).padStart(2,"0")}</i>${esc(sec.t)}</a>`).join("")}</nav></div>`;
+
+  let m=0;
+  $("#p-reference").innerHTML=toc+SECS.map(sec=>sec.group
+    ? `<h4 class="refgroup">${esc(sec.group)}</h4>`
+    : `<div class="card" id="${sec.id}"><h3><i class="refn">${String(++m).padStart(2,"0")}</i>${esc(sec.t)}</h3>${sec.body}</div>`).join("");
 
   $$("#p-reference [data-armloc]").forEach(b=>b.onclick=()=>{
     REF.armLoc=b.dataset.armloc; renderReference();
@@ -3716,11 +3903,21 @@ function clampWound(n){
    a same-tier fight above about stat 70 into one unwoundable outcome.
    Multiplying keeps every tier playing alike: two gods with mortal swords have
    the fight two trained humans have. */
+const DMG_SCALE=10;   // the stat a trained human is built around
 function dmgMultiplier(c,which){
   const s=k=>Math.max(sCur(c,k),0.5);
   const v=which==="brawn"?s("brawn"):which==="deft"?s("deftness"):
           which==="drive"?s("drive"):(s("brawn")+s("deftness"))/2;
-  return v/10;
+  return v/DMG_SCALE;
+}
+/* The stats that fed the multiplier, so the strike log can show the arithmetic
+   instead of asserting a number. A weapon naming two stats averages them. */
+function dmgStatValues(c,which){
+  const s=k=>Math.max(sCur(c,k),0.5);
+  if(which==="bd_avg") return [["Brawn",s("brawn")],["Deftness",s("deftness")]];
+  const k=which==="deft"?"deftness":which;
+  const name=({brawn:"Brawn",deftness:"Deftness",drive:"Drive"})[k]||k;
+  return [[name,s(k)]];
 }
 /* The three edges, and each one pulls a different lever.
 
@@ -3832,7 +4029,8 @@ function resolveAttack(c,target,loc,opts){
   const tough=Math.max(tStat(target,LOC_TOUGH[loc]),0.5);
   const out={weapon:w,piece:piece,loc:loc,targetAC:targetAC,toHitBonus:toHitBonus,
              gapPen:gapPen,vital:vital,punish:punish,pushMult:pushMult,
-             skill:skill,hitMod:hitMod,dmgMult:dmgMult,
+             skill:skill,hitMod:hitMod,dmgMult:dmgMult,dmgStat:w.dmg,
+             dmgFrom:dmgStatValues(c,w.dmg),
              tough:tough,toughStat:LOC_TOUGH[loc],avgDice:avgDice,
              gapRating:(piece&&piece.gap)||0,gapBite:gapBiteOf(w),
              gapWound:gapWound(piece,w)};
@@ -4462,7 +4660,21 @@ function doStrike(){
      exactly where it was least deserved — a dagger against a fluted cuirass read as a Minor wound.
      Doubling is proportional, so a crit is worth more when you were already hurting them and less
      when you were hopeless. The floor in step 6 is what stops "less" from becoming "nothing".</p>`:""}
-     <p>Your damage stat <b>multiplies</b> the dice. That matters
+     <p><b>Where the ×${r.dmgMult.toFixed(2)} comes from.</b> ${(r.dmgFrom||[]).length>1
+       ? `${esc(w.name)} names two stats, so it reads their average:
+          <span class="math">(${r.dmgFrom.map(x=>`${esc(x[0])} ${x[1].toFixed(1)}`).join(" + ")}) ÷ ${r.dmgFrom.length}
+          = ${(r.dmgFrom.reduce((n,x)=>n+x[1],0)/r.dmgFrom.length).toFixed(1)}</span>`
+       : `${esc(w.name)} is a <b>${esc(statLabel(w.dmg))}</b> weapon, so it reads that stat:
+          <span class="math">${esc(r.dmgFrom[0][0])} ${r.dmgFrom[0][1].toFixed(1)}</span>`}
+       — then divided by <b>${DMG_SCALE}</b>:
+       <span class="math">${(r.dmgFrom.reduce((n,x)=>n+x[1],0)/Math.max(1,r.dmgFrom.length)).toFixed(1)} ÷ ${DMG_SCALE} = ×${r.dmgMult.toFixed(2)}</span></p>
+     <p>The <b>${DMG_SCALE}</b> is the stat a trained human is built around, so it is the pivot: at
+       ${DMG_SCALE} the multiplier is <b>×1.00</b> and the weapon does exactly what its dice say. Above
+       that you are amplifying it, below that you are wasting it. Which stat a weapon reads is a
+       property of the <em>weapon</em>, not of you — a heavy axe is muscled, a rapier is placed, and
+       a longsword splits the difference. <b>The wound uses the CURRENT stat</b>, so an arm that has
+       already been cut swings a weaker weapon.</p>
+     <p>Your damage stat <b>multiplies</b> the dice rather than adding to them. That matters
      because everything after this is a comparison — how the blow measures up against the body
      part — and a comparison cares about proportions.</p>
      <p>An added bonus would shrink the dice's share as characters grew: at high stats the roll
