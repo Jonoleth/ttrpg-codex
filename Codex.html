@@ -194,6 +194,11 @@ h4{font-family:'Spline Sans Mono',monospace;font-size:.68rem;letter-spacing:.2em
 .wtag{font-family:'Spline Sans Mono',monospace;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;
   border:1px solid var(--line);border-radius:2px;padding:3px 7px;color:var(--bone-faint)}
 .wtag.hot{color:var(--gild);border-color:var(--gild-dim)}
+.wtag[title]{cursor:help}
+/* a trait nobody has defined: dimmed, and marked with a ? so it reads as
+   unknown even without hovering */
+.wtag.undef{border-style:dashed;opacity:.65}
+.wpn-tr .wtag{margin-left:4px}
 
 /* sparring */
 .spar-wrap{display:grid;grid-template-columns:200px minmax(0,1fr) 200px;gap:20px;align-items:start}
@@ -966,6 +971,31 @@ function bandOf(v){
    `drain` is loss that no longer belongs to a removable wound: bleed, CON
    spent, a GM adjustment. A wound's maluses are a %-of-base or a flat figure
    (§13.6), carried on the wound record itself. */
+/* ---- a weapon trait, wherever it is shown -----------------------------
+   Every place that lists a trait must say whether it MEANS anything. 25 of the
+   trait heads on the weapon tables have no entry in any rules document, and a
+   name printed with no way to look it up is worse than no name: the reader
+   assumes it does something and cannot find out what. So the tooltip carries
+   the rules text where one exists and says so plainly where it does not. */
+const NO_TRAIT_DEF="UNDEFINED — this trait appears on the weapon tables and has "
+  +"no entry in any rules document. Rule it at the table.";
+function traitTip(tr){
+  if(!tr) return "";
+  if(tr.kind==="stat") return `${tr.name} — the attribute spec, not a trait: it says which of your `
+    +`stats drives this weapon, and is already read into the hit and damage stats.`;
+  if(tr.text) return `${tr.name} · ${tr.kind}\n\n${tr.text}`;
+  return `${tr.name}\n\n${NO_TRAIT_DEF}`;
+}
+/* Trait chips for the compact views. Undefined ones are dimmed and marked with
+   a "?", so the state is visible without a hover as well as with one. */
+function traitChips(w,limit){
+  const info=(w&&w.traitInfo)||[];
+  const list=limit?info.slice(0,limit):info;
+  return list.map(tr=>`<span class="wtag${tr.kind==="undefined"?" undef":""}"
+    title="${esc(traitTip(tr))}">${esc(tr.name)}${tr.kind==="undefined"?" ?":""}</span>`).join("")
+    +(limit&&info.length>limit?`<span class="wtag" title="${esc(info.slice(limit).map(x=>x.name).join(" · "))}">+${info.length-limit} more</span>`:"");
+}
+
 function sBase(c,k){ const st=c.stats[k]; return st?(st.base||0):0; }
 function sDrain(c,k){ const st=c.stats[k]; return st?(st.drain||0):0; }
 /* §13.6 — one wound's malus on one stat, before any suppression. */
@@ -1224,7 +1254,7 @@ function equipPanel(c){
     <div class="wtags">
       ${w.twoHanded?`<span class="wtag hot">two-handed</span>`:""}
       ${w.length?`<span class="wtag">${esc(w.length)}</span>`:""}
-      ${(w.traits||[]).slice(0,6).map(t=>`<span class="wtag">${esc(t)}</span>`).join("")}
+      ${traitChips(w,6)}
     </div>
     ${w.desc?`<p class="note" style="margin:12px 0 0;font-size:.88rem">${esc(w.desc)}</p>`:""}`;
 }
@@ -4523,7 +4553,7 @@ function renderSpar(){
       <span class="wpn-n">${esc(w.name)}</span>
       <span class="wpn-mode">${esc(mode)}</span>
       ${fields.filter(Boolean).join("")}
-      ${(w.traits||[]).length?`<span class="wpn-tr">${esc((w.traits||[]).join(" · "))}</span>`:""}
+      ${(w.traitInfo||[]).length?`<span class="wpn-tr">${traitChips(w,0)}</span>`:""}
     </div>`;
   };
 
@@ -5016,8 +5046,7 @@ function renderWeapon(){
         // "Disadvantage at range (5) (p)" came out as "Disadvantage at range (p)"
         // and lost the range it was about.
         const tail=x.name.slice(x.head.length).trim();
-        return `<div class="wtrait${kind==="undefined"?" undef":""}"
-          title="${esc(x.text||(kind==="undefined"?"No rules text exists for this trait in any document — it appears on the weapon tables and nowhere else.":""))}">
+        return `<div class="wtrait${kind==="undefined"?" undef":""}" title="${esc(traitTip(x))}">
         <b>${esc(x.head)}</b>${tail?`<em>${esc(tail)}</em>`:""}
         <span>${x.text?esc(x.text):`<i>no definition in any rules document</i>`}</span>
       </div>`;}).join("")}</div>`;
@@ -5093,7 +5122,7 @@ function renderWeapon(){
       ${(w.traitInfo||[]).filter(x=>x.kind==="stat").length?`<div class="blk"><h5>How it is driven</h5>
         <p class="note" style="margin:0 0 6px">Not a trait — this is the attribute spec, and it is
         already read into the hit and damage stats above.</p>
-        ${traitsOfKind(w,"stat").map(x=>`<span class="chip">${esc(x.name)}</span>`).join("")}</div>`:""}
+        ${traitsOfKind(w,"stat").map(x=>`<span class="chip" title="${esc(traitTip(x))}">${esc(x.name)}</span>`).join("")}</div>`:""}
       ${TRAIT_KINDS.map(([k,title,blurb])=>traitBlock(k,title,blurb)).join("")}
       ${!(w.traitInfo||[]).length?`<p class="note">This weapon carries no traits.</p>`:""}
     </div>
