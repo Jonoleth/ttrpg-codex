@@ -3186,9 +3186,13 @@ function renderWbBar(){
     c.potions=(c.potions||[]).concat([{id:uid(),name:WB_POTION.name||"Unnamed draught",
       effects:WB_POTION.effects.map(e=>({effect:e.effect,phase:e.phase,part:e.part,pow:e.pow}))}]);
     logit(c,"Bottled — "+(WB_POTION.name||"draught")+" ("+WB_POTION.count+" effect"+(WB_POTION.count===1?"":"s")+")");
-    save();renderWbBar();};
+    // renderAll, not renderWbBar: the Infirmary's kit reads c.potions too, and
+    // showTab() only toggles a class -- it does not re-render. Refreshing just
+    // this bar left a bottled haemostatic invisible on the Infirmary tab, which
+    // reported "Nothing medical bottled yet" with the dose sitting on the sheet.
+    save();renderAll();};
   $$("#wb-bar [data-rmpot]").forEach(b=>b.onclick=()=>{
-    c.potions.splice(num(b.dataset.rmpot,0),1);save();renderWbBar();});
+    c.potions.splice(num(b.dataset.rmpot,0),1);save();renderAll();});
   $$("#wb-bar [data-drink]").forEach(b=>b.onclick=()=>{
     const i=num(b.dataset.drink,0), pt=c.potions[i]; if(!pt) return;
     DRINK={potion:pt,idx:i,pick:{}}; renderWbBar();});
